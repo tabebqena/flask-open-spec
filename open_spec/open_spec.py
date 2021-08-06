@@ -53,7 +53,7 @@ class CliWrapper:
             is_eager=True,
         )
         def init(document_options=None):
-            open_spec_obj.do_init(document_options=document_options)
+            open_spec_obj.init_command(document_options=document_options)
 
         @oas_cli.command(
             "build",
@@ -63,7 +63,7 @@ class CliWrapper:
         @click.option("--validate", type=bool, default=True)
         @click.option("--cache", type=bool, default=True)
         def build(validate, cache):
-            open_spec_obj.do_build(validate=validate, cache=cache)
+            open_spec_obj.build_command(validate=validate, cache=cache)
 
         # @click.option(
         #    "-o",
@@ -130,7 +130,7 @@ def _load_or_fetch(save_files, file_path, fetcher):
 class OpenSpec:
     def __init__(
         self,
-        app: Flask,
+        app: Flask = None,
         blueprint_name: str = None,
         url_prefix: str = None,
         auto_build=None,
