@@ -10,7 +10,7 @@ from werkzeug.routing import Rule
 PATH_RE = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
 
 
-def __rule_to_path(rule):
+def rule_to_path(rule):
     return PATH_RE.sub(r"{\1}", rule.rule)
 
 
@@ -18,7 +18,7 @@ def get_app_paths():
     rules: List[Rule] = current_app.url_map._rules
     paths = {}
     for r in rules:
-        path = __rule_to_path(r)
+        path = rule_to_path(r)
         methods = __get_valid_methods(r)
         paths[path] = methods
     return paths
@@ -31,10 +31,12 @@ CONVERTER_MAPPING = {
     werkzeug.routing.FloatConverter: ("number", "float"),
 }
 #
-def __rule_to_params(rule, overrides=None):
+def __rule_to_params(rule, overrides=None, long_stub=False):
     overrides = overrides or {}
     result = [
-        __argument_to_param(argument, rule, overrides.get(argument, {}))
+        __argument_to_param(
+            argument, rule, overrides.get(argument, {}), long_stub
+        )
         for argument in rule.arguments
     ]
     for key in overrides.keys():
@@ -44,16 +46,21 @@ def __rule_to_params(rule, overrides=None):
     return result
 
 
-def __argument_to_param(argument, rule, override=None):
+def __argument_to_param(argument, rule, override=None, long_stub=False):
     param = {
         "in": "path",
         "name": argument,
         "required": True,
         "schema": {},
-        "description": "",
-        "deprecated": False,
-        "allowEmptyValue": False,
     }
+    if long_stub:
+        param.update(
+            {
+                "description": "",
+                "deprecated": False,
+                "allowEmptyValue": False,
+            }
+        )
     type_, format_ = CONVERTER_MAPPING.get(
         type(rule._converters[argument]), DEFAULT_TYPE
     )
@@ -155,11 +162,12 @@ def __get_valid_methods(rule: Rule, version=3):
     return methods
 
 
-def extract_path_parameters(document_options=False):
+def extract_path_parameters(document_options=False, long_stub=False):
     data = {}
     rules: List[Rule] = current_app.url_map._rules
+
     for r in rules:
-        path = __rule_to_path(r)
+        path = rule_to_path(r)
         params = __rule_to_params(r) or []
         methods = __get_valid_methods(r)
         for method in methods:
