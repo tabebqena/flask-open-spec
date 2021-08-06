@@ -1,12 +1,27 @@
 import re
 from flask import current_app
 
-from typing import List
+from typing import List, Literal
 
 import werkzeug.routing
 from flask import current_app
 from werkzeug.routing import Rule
 
+
+#
+#
+
+VALID_METHODS_OPENAPI_V3 = [
+    "get",
+    "post",
+    "put",
+    "patch",
+    "delete",
+    "head",
+    "options",
+    "trace",
+]
+#
 PATH_RE = re.compile(r"<(?:[^:<>]+:)?([^<>]+)>")
 
 
@@ -14,6 +29,11 @@ def rule_to_path(rule):
     return PATH_RE.sub(r"{\1}", rule.rule)
 
 
+def app_path_oas_path(app_path):
+    return PATH_RE.sub(r"{\1}", app_path)
+
+
+#
 def get_app_paths():
     rules: List[Rule] = current_app.url_map._rules
     paths = {}
@@ -94,7 +114,11 @@ def __merge_parameters(default_parameters: List, user_parameters: List):
     return res
 
 
-def preserve_user_edits(default_params: dict, user_params: dict):
+def preserve_user_edits(
+    default_params: dict,
+    user_params: dict,
+    allowed_methods=VALID_METHODS_OPENAPI_V3,
+):
     res = {}
     if not default_params:
         default_params = {}
@@ -120,7 +144,9 @@ def preserve_user_edits(default_params: dict, user_params: dict):
         )
 
         for method in methods:
-            if method not in VALID_METHODS_OPENAPI_V3:
+            """if method not in VALID_METHODS_OPENAPI_V3:
+            continue"""
+            if method not in allowed_methods:
                 continue
             res.setdefault("paths", {}).setdefault(path, {}).setdefault(
                 method, {}
@@ -139,22 +165,10 @@ def preserve_user_edits(default_params: dict, user_params: dict):
     return res
 
 
-VALID_METHODS_OPENAPI_V3 = [
-    "get",
-    "post",
-    "put",
-    "patch",
-    "delete",
-    "head",
-    "options",
-    "trace",
-]
-
-
 def __get_valid_methods(rule: Rule, version=3):
     excluded_methods = {"head"}
     _mthds: set = rule.methods
-    methods = []
+    methods: List[str] = []
     valid_methods = VALID_METHODS_OPENAPI_V3  # [version]
     for method in _mthds:
         if method.lower() in (set(valid_methods) - excluded_methods):
@@ -162,16 +176,22 @@ def __get_valid_methods(rule: Rule, version=3):
     return methods
 
 
-def extract_path_parameters(document_options=False, long_stub=False):
+def extract_path_parameters(
+    # document_options=False,
+    long_stub=False,
+    allowed_methods=VALID_METHODS_OPENAPI_V3,
+):
     data = {}
     rules: List[Rule] = current_app.url_map._rules
 
     for r in rules:
         path = rule_to_path(r)
-        params = __rule_to_params(r) or []
+        params = __rule_to_params(r, long_stub=long_stub) or []
         methods = __get_valid_methods(r)
         for method in methods:
-            if method.lower() == "options" and not document_options:
+            """if method.lower() == "options" and not document_options:
+            continue"""
+            if method.lower() not in allowed_methods:
                 continue
             data.setdefault("paths", {}).setdefault(path, {}).setdefault(
                 method, {}

@@ -1,29 +1,33 @@
-from ._utils import clean_parameters_list
+from ._utils import clean_parameters_list, merge_recursive
 from ._parameters import VALID_METHODS_OPENAPI_V3
 from typing import Any, Literal, Union, cast
 from marshmallow import Schema, class_registry
 
 
 class OasBuilder:
-    data = {}
+    data: dict = {}
 
     def __init__(
         self,
         data: dict = {},
         default_required=True,
         default_content_type="application/json",
+        allowed_methods=VALID_METHODS_OPENAPI_V3,
     ) -> None:
         data = data
         self.default_required = default_required
         self.default_content_type = default_content_type
+        self.allowed_methods = allowed_methods
 
     def __validate__(self, path, method, schema):
-        if not path.startswith("/"):
+        if path is not None and not path.startswith("/"):
             raise ValueError("path {0} should start with `/`".format(path))
-        if not method in VALID_METHODS_OPENAPI_V3:
+        if (
+            method is not None and not method in self.allowed_methods
+        ):  # VALID_METHODS_OPENAPI_V3:
             raise ValueError(
-                "method should be one of valid methods {0}".format(
-                    ", ".join(VALID_METHODS_OPENAPI_V3)
+                "method should be one of allowed methods {0}".format(
+                    ", ".join(self.allowed_methods)
                 )
             )
         schema_error = TypeError(
@@ -59,26 +63,38 @@ class OasBuilder:
     ):
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
-        content_type = content_type or self.default_content_type
 
-        required = kwargs.get("required", self.default_required)
-
-        description = kwargs.get("description", "")
-
-        self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-            mthd, {}
-        ).setdefault("requestBody", {}).setdefault("content", {}).setdefault(
-            content_type, {}
-        ).setdefault(
-            "schema", schema
+        self.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "paths": {
+                            path: {
+                                mthd: {
+                                    "requestBody": {
+                                        "content": {
+                                            content_type
+                                            or self.default_content_type: {
+                                                "schema": schema
+                                            }
+                                        },
+                                        "description": kwargs.get(
+                                            "description", ""
+                                        ),
+                                        "required": kwargs.get(
+                                            "required", self.default_required
+                                        ),
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    self.data,
+                ]
+            ),
         )
-        self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-            mthd, {}
-        ).setdefault("requestBody", {}).setdefault("description", description)
-
-        self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-            mthd, {}
-        ).setdefault("requestBody", {}).setdefault("required", required)
+        # self.data["paths"][path][mthd]["requestBody"] = request_body
 
     def response(
         self,
@@ -94,7 +110,33 @@ class OasBuilder:
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
         content_type = content_type or self.default_content_type
-        self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
+
+        self.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "paths": {
+                            path: {
+                                mthd: {
+                                    "responses": {
+                                        str(code): {
+                                            "content": {
+                                                "schema": schema,
+                                            },
+                                            "description": description,
+                                        },
+                                    },
+                                },
+                            }
+                        }
+                    },
+                    self.data,
+                ]
+            ),
+        )
+
+        """self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
             mthd, {}
         ).setdefault("responses", {}).setdefault(str(code), {}).setdefault(
             "content", {}
@@ -107,7 +149,7 @@ class OasBuilder:
             mthd, {}
         ).setdefault("responses", {}).setdefault(str(code), {}).setdefault(
             "description", description
-        )
+        )"""
 
     def security_reqs(
         self,

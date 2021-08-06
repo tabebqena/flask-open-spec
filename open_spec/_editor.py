@@ -58,7 +58,7 @@ class Editor:
                 data = merge_recursive([prev, data])
         yaml_dump("", data, self.config.draft_file)
 
-    def extract_paths_details(self, document_options=False):
+    def extract_paths_details(self):
         data = {}
         app_paths = get_app_paths()
         prev = load_file(self.config.paths_file, {})
@@ -81,7 +81,7 @@ class Editor:
             for method in methods:
                 if method.lower() in ["get", "delete", "head"]:
                     continue
-                if method.lower() == "options" and not document_options:
+                if method.lower() not in self.config.allowed_methods:
                     continue
                 path_data[method] = merge_recursive(
                     [
@@ -93,22 +93,26 @@ class Editor:
         self.path_details = data
         return data
 
-    def upadte_paths_details_file(self, document_options=False):
-        data = self.extract_paths_details(document_options)
+    def upadte_paths_details_file(self):
+        data = self.extract_paths_details()
         yaml_dump("", data, self.config.paths_file)
 
-    def update_path_parameters(self, document_options=False):
+    def update_path_parameters(self):
         data: dict = extract_path_parameters(
-            document_options=document_options,
+            allowed_methods=self.config.allowed_methods,
             long_stub=self.config.use_long_stubs,
         )
         file_path = self.config.parameters_file
         previous = load_file(file_path, {})
-        data = preserve_user_edits(data, previous)
+        data = preserve_user_edits(
+            data,
+            previous,
+            allowed_methods=self.config.allowed_methods,
+        )
         yaml_dump("", data, file_path)
         self.parameters = data
 
-    def extract_request_bodies(self, document_options=False):
+    def extract_request_bodies(self):
         data = {}
         app_paths = get_app_paths()
         stub = (
@@ -121,24 +125,26 @@ class Editor:
             for method in methods:
                 if method.lower() in ["get", "delete", "head"]:
                     continue
-                if method.lower() == "options" and not document_options:
+                if method.lower() not in self.config.allowed_methods:
                     continue
+                """if method.lower() == "options" and not document_options:
+                    continue"""
                 data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-                    method, {}
+                    method.lower(), {}
                 ).setdefault("requestBody", stub)
         self.request_bodies = data
         return data
 
-    def update_request_file(self, document_options=False):
+    def update_request_file(self):
         file_path = self.config.request_body_file
 
         previous_data = load_file(file_path, {})
-        data = self.extract_request_bodies(document_options=document_options)
+        data = self.extract_request_bodies()
 
         data = merge_recursive([data, previous_data])
         yaml_dump("", data, file_path)
 
-    def extract_responses(self, document_options=False):
+    def extract_responses(self):
         data = {}
         app_paths = get_app_paths()
         stub = (
@@ -149,7 +155,9 @@ class Editor:
         for path in app_paths:
             methods = app_paths[path]
             for method in methods:
-                if method.lower() == "options" and not document_options:
+                """if method.lower() == "options" and not document_options:
+                continue"""
+                if method.lower() not in self.config.allowed_methods:
                     continue
                 data.setdefault("paths", {}).setdefault(path, {}).setdefault(
                     method, {}
@@ -157,8 +165,8 @@ class Editor:
         self.responses = data
         return data
 
-    def update_responses_file(self, document_options=False):
-        data = self.extract_responses(document_options=document_options)
+    def update_responses_file(self):
+        data = self.extract_responses()
         file_path = self.config.responses_file
 
         previous_data = load_file(file_path, {})
@@ -180,20 +188,16 @@ class Editor:
             res_[2] = False
         return res_
 
-    def update_snippets_files(self, document_options=False):
+    def update_snippets_files(self):
         if not self.config.spec_files_locator:
             return
-        details = self.path_details or self.extract_paths_details(
-            document_options
-        )
+        details = self.path_details or self.extract_paths_details()
         parameters = self.parameters or extract_path_parameters(
-            document_options=document_options,
             long_stub=self.config.use_long_stubs,
+            allowed_methods=self.config.allowed_methods,
         )
-        requests = self.request_bodies or self.extract_request_bodies(
-            document_options
-        )
-        responses = self.responses or self.extract_responses(document_options)
+        requests = self.request_bodies or self.extract_request_bodies()
+        responses = self.responses or self.extract_responses()
 
         rules: List[Rule] = current_app.url_map._rules
         kwargs = {}

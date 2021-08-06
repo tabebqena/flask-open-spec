@@ -10,7 +10,7 @@ class OasConfig:
     cache_on_build = True
     save_files = True
     auto_build = False
-    document_options = False
+    # document_options = False
     blueprint_url_prefix = "/spec"
     blueprint_name = "spec_bp"
     __register_blueprint = True
@@ -32,6 +32,22 @@ class OasConfig:
     __spec_ui_url = "/spec-ui"
     __spec_files_locator = None
     __use_long_stubs = False
+    __allowed_methods = [
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "head",
+        "options",
+        "trace",
+        "*",
+    ]
+    __excluded_methods = [
+        "head",
+        "options",
+        "trace",
+    ]
 
     def __init__(self, app: Flask) -> None:
         with app.app_context():
@@ -47,9 +63,9 @@ class OasConfig:
             )
             self.save_files = current_app.config.get("OAS_FILE_SAVE", True)
             self.auto_build = current_app.config.get("OAS_AUTO_BUILD", False)
-            self.document_options = current_app.config.get(
+            """self.document_options = current_app.config.get(
                 "OAS_DOCUMENT_OPTIONS", False
-            )
+            )"""
 
             self.blueprint_url_prefix = current_app.config.get(
                 "OAS_BLUEPRINT_URL_PREFIX", self.blueprint_url_prefix
@@ -124,6 +140,17 @@ class OasConfig:
             self.spec_files_locator = current_app.config.get(
                 "OAS_SPEC_FILES_LOCATOR", self.__spec_files_locator
             )
+
+            self.excluded_methods = current_app.config.get(
+                "OAS_EXCLUDED_METHODS", self.__excluded_methods
+            )
+            self.allowed_methods = [
+                method
+                for method in current_app.config.get(
+                    "OAS_ALLOWED_METHODS", self.__allowed_methods
+                )
+                if method not in self.excluded_methods
+            ]
 
         self.oas_dir = os.path.join(self.root_dir, self.__oas_dirname)
         self.fragments_dir = os.path.join(self.oas_dir, self.__fragments_dir)

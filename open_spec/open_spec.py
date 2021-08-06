@@ -1,7 +1,6 @@
 from copy import deepcopy
 from .oas_config import OasConfig
 import os
-from logging import warning
 from typing import Callable, Optional
 
 import click
@@ -15,7 +14,6 @@ from flask import (
     render_template,
     url_for,
 )
-from flask.cli import AppGroup
 from openapi_spec_validator import validate_spec
 
 from .builder import OasBuilder
@@ -30,55 +28,16 @@ from ._utils import (
     yaml_dump,
 )
 from ._parameters import get_app_paths, extract_path_parameters
-
-
-class CliWrapper:
-    def __init__(self, open_spec_obj) -> None:
-        self.oas_cli = oas_cli = AppGroup(
-            "oas",
-            help="command line interface to control OAS of flask app and marshmallow schemas\n \
-                    This tool can help by generating stub files, and merging them to form the OAS file",
-        )
-
-        @oas_cli.command(
-            "init",
-            help="Generate files from stubs, If file already present, It will merged with the stub data \n \
-        Always consider revising the generated files. and caching the previous versions.",
-        )
-        @click.option(
-            "-o",
-            "--document-options",
-            is_flag=True,
-            default=None,
-            is_eager=True,
-        )
-        def init(document_options=None):
-            open_spec_obj.init_command(document_options=document_options)
-
-        @oas_cli.command(
-            "build",
-            help="Extract data from all marshmallow schemas, add them in the right place, \n \
-            merge all files from .generated dir in one file and apply overrides if present in overrides file.",
-        )
-        @click.option("--validate", type=bool, default=True)
-        @click.option("--cache", type=bool, default=True)
-        def build(validate, cache):
-            open_spec_obj.build_command(validate=validate, cache=cache)
-
-        # @click.option(
-        #    "-o",
-        #    "--document-options",
-        #    is_flag=True,
-        #    default=None,
-        # )  # is_eager=True,
-        open_spec_obj.app.cli.add_command(oas_cli)
+from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper
+from .__view import __ViewManager, _OpenSpec__ViewManager
 
 
 def _add_paths_to_spec(spec: APISpec, data):
-    Aapp_paths_list = get_app_paths()
+    app_paths_list = get_app_paths()
 
-    for path in Aapp_paths_list:
-        for method in Aapp_paths_list[path]:
+    for path in app_paths_list:
+        for method in app_paths_list[path]:
+
             summary: str = data.get("paths", {}).get(path, {}).get("summary")
             description: str = (
                 data.get("paths", {}).get(path, {}).get("description")
@@ -128,6 +87,7 @@ def _load_or_fetch(save_files, file_path, fetcher, fetcher_kwargs={}):
 
 
 class OpenSpec:
+    
     def __init__(
         self,
         app: Flask = None,
@@ -137,68 +97,52 @@ class OpenSpec:
         authorization_handler: Callable = None,
         config_obj: OasConfig = None,
     ) -> None:
-        self.__built = False
-        self.__url_prefix = url_prefix
-        self.__auto_build_flag = auto_build
-        self.__authorization_handler = authorization_handler
 
         if app:
-            self.init_app(app, blueprint_name, config_obj)
+            self.init_app(
+                app,
+                blueprint_name,
+                url_prefix,
+                auto_build,
+                authorization_handler,
+                config_obj,
+            )
 
     def init_app(
         self,
         app: Flask,
-        blueprint_name=None,
-        config_obj: Optional[OasConfig] = None,
+        blueprint_name: str = None,
+        url_prefix: str = None,
+        auto_build=None,
+        authorization_handler: Callable = None,
+        config_obj: OasConfig = None,
     ):
         self.app = app
-        CliWrapper(self)
-        self.__register_callback()
 
         if config_obj:
             self.config: OasConfig = config_obj
         else:
             self.config: OasConfig = OasConfig(app)
-        self.__blueprint_name = blueprint_name or self.config.blueprint_name
 
+        __CliWrapper(self)
+        self.view_manager = __ViewManager(
+            self,
+            blueprint_name=blueprint_name,
+            url_prefix=url_prefix,
+            auto_build=auto_build,
+            authorization_handler=authorization_handler,
+        )
         self.__editor = Editor(self.config)
-        self.register_spec_blueprint(
-            blueprint_name=self.__blueprint_name, url_prefix=self.__url_prefix
-        )
-        self.app.extensions["open_spec"] = self
 
-    def __auto_build(self):
-        cached_final = cache_file(
-            self.config.final_file, self.config.oas_dir, self.config.cache_dir
-        )
-        try:
-            self.build_command()
-            if cached_final and os.path.exists(cached_final):
-                os.remove(cached_final)
-        except Exception as e:
-            warning(e)
-
-    def __register_callback(self):
-        auto_build = (
-            lambda res: self.__auto_build_flag
-            if self.__auto_build_flag is not None
-            else self.config.auto_build
-        )
-
-        if auto_build:
-            self.app.before_first_request(self.__auto_build)
-
-    def __run_updaters(self, document_options):
+    def __run_updaters(self):
         self.__editor.upadte_draft_file()
         self.__editor.upadte_paths_details_file()
 
-        self.__editor.update_path_parameters(document_options)
-        self.__editor.update_request_file(document_options)
-        self.__editor.update_responses_file(document_options)
+        self.__editor.update_path_parameters()
+        self.__editor.update_request_file()
+        self.__editor.update_responses_file()
 
-    def init_command(self, document_options=None, echo=True):
-        if document_options is None:
-            document_options = self.config.document_options
+    def init_command(self, echo=True):
         try:
             os.makedirs(self.config.oas_dir)
         except:
@@ -212,7 +156,7 @@ class OpenSpec:
             for f in self.config.files_list:
                 if not os.path.exists(f):
                     open(f, "w").close()
-            self.__run_updaters(document_options)
+            self.__run_updaters()
             if echo and self.config.debug:
                 click.echo(
                     "Now, It is your time to edit the generated files:\
@@ -235,7 +179,7 @@ class OpenSpec:
                         self.config.override_file,
                     )
                 )
-        self.__editor.update_snippets_files(document_options)
+        self.__editor.update_snippets_files()
 
     def __make_spec(self, data):
         spec = APISpec(
@@ -258,7 +202,10 @@ class OpenSpec:
             self.config.save_files,
             self.config.parameters_file,
             extract_path_parameters,
-            {"long_stub": self.config.use_long_stubs},
+            {
+                "long_stub": self.config.use_long_stubs,
+                "allowed_methods": self.config.allowed_methods,
+            },
         )
         requestBodies = _load_or_fetch(
             self.config.save_files,
@@ -273,10 +220,12 @@ class OpenSpec:
         )
         overrides = load_file(self.config.override_file)
         spec_files_data = self.__editor.load_snippet_files()
-        print(spec_files_data)
+
+        #
         data = merge_recursive(
             [
                 overrides,
+                # decorators_data,
                 OasBuilder.data,
                 spec_files_data,
                 paths_details,
@@ -286,6 +235,7 @@ class OpenSpec:
                 draft_data,
             ]
         )
+
         data = _clean_invalid_paths(data)
         return data
 
@@ -303,8 +253,10 @@ class OpenSpec:
                     self.config.cache_dir,
                 )
         data = self.__load_data()
+
         spec = self.__make_spec(data)
         _add_paths_to_spec(spec, data)
+
         data = clean_data(
             merge_recursive(
                 [
@@ -317,61 +269,17 @@ class OpenSpec:
             os.remove(cached_final)
         if validate:
             validate_spec(data)
-        self.__built = True
         yaml_dump("", data, file=self.config.final_file)
         if self.config.debug:
             click.echo(self.config.final_file)
-
-    def register_spec_blueprint(self, blueprint_name=None, url_prefix=None):
-        if not self.config.register_blueprint:
-            return
-        if not url_prefix:
-            url_prefix = self.config.blueprint_url_prefix
-        if not blueprint_name:
-            blueprint_name = self.config.blueprint_name
-        self.blueprint = Blueprint(
-            blueprint_name,
-            __name__,
-            template_folder="./templates",
-            static_folder="static",
-            static_url_path="/static",
-            url_prefix=url_prefix,
-        )
-
-        if self.config.register_json_route:
-            self.blueprint.add_url_rule(
-                self.config.spec_json_url,
-                view_func=self.get_spec_json,
-                endpoint=self.config.json_endpoint or "get_spec_json",
-            )
-
-        if self.config.register_ui_route:
-            self.blueprint.add_url_rule(
-                self.config.spec_ui_url,
-                view_func=self.get_spec_ui,
-                endpoint=self.config.ui_endpoint or "get__spec_ui",
-            )
-        self.app.register_blueprint(self.blueprint)
+        # store data in snippets
+        self.__editor.update_snippets_files()
 
     def get_spec_dict(self):
-        if not self.__built:
-            self.build_command()
-
-        return load_file(self.config.final_file)
+        return self.view_manager.get_spec_dict()
 
     def get_spec_json(self):
-        if self.__authorization_handler:
-            self.__authorization_handler()
-
-        return jsonify(self.get_spec_dict())
+        return self.view_manager.get_spec_json()
 
     def get_spec_ui(self):
-
-        return render_template(
-            "swagger-ui.html",
-            blueprint_name=self.blueprint.name,
-            json_url=url_for(
-                self.config.json_endpoint
-                or self.__blueprint_name + ".get_spec_json"
-            ),
-        )
+        return self.view_manager.get_spec_ui()
