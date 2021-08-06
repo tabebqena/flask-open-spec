@@ -121,10 +121,10 @@ def _clean_invalid_paths(data):
     return data
 
 
-def _load_or_fetch(save_files, file_path, fetcher):
+def _load_or_fetch(save_files, file_path, fetcher, fetcher_kwargs={}):
     if save_files:
         return load_file(file_path)
-    return fetcher()
+    return fetcher(**fetcher_kwargs)
 
 
 class OpenSpec:
@@ -235,6 +235,7 @@ class OpenSpec:
                         self.config.override_file,
                     )
                 )
+        self.__editor.update_snippets_files(document_options)
 
     def __make_spec(self, data):
         spec = APISpec(
@@ -248,7 +249,7 @@ class OpenSpec:
 
     def __load_data(self):
         draft_data = load_file(self.config.draft_file)
-        paths = _load_or_fetch(
+        paths_details = _load_or_fetch(
             self.config.save_files,
             self.config.paths_file,
             self.__editor.extract_paths_details,
@@ -257,6 +258,7 @@ class OpenSpec:
             self.config.save_files,
             self.config.parameters_file,
             extract_path_parameters,
+            {"long_stub": self.config.use_long_stubs},
         )
         requestBodies = _load_or_fetch(
             self.config.save_files,
@@ -270,11 +272,14 @@ class OpenSpec:
             self.__editor.extract_responses,
         )
         overrides = load_file(self.config.override_file)
+        spec_files_data = self.__editor.load_snippet_files()
+        print(spec_files_data)
         data = merge_recursive(
             [
                 overrides,
                 OasBuilder.data,
-                paths,
+                spec_files_data,
+                paths_details,
                 parameters,
                 requestBodies,
                 responses,
