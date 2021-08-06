@@ -30,6 +30,8 @@ class OasConfig:
     __draft_file_name = "draft.yaml"
     __spec_json_url = "/spec"
     __spec_ui_url = "/spec-ui"
+    __spec_files_locator = None
+    __use_long_stubs = False
 
     def __init__(self, app: Flask) -> None:
         with app.app_context():
@@ -114,6 +116,13 @@ class OasConfig:
             )
             self.__override_file_name = current_app.config.get(
                 "OAS_OVERRIDE_FILENAME", self.__override_file_name
+            )
+
+            self.use_long_stubs = current_app.config.get(
+                "OAS_LONG_STUB", self.__use_long_stubs
+            )
+            self.spec_files_locator = current_app.config.get(
+                "OAS_SPEC_FILES_LOCATOR", self.__spec_files_locator
             )
 
         self.oas_dir = os.path.join(self.root_dir, self.__oas_dirname)
