@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class __CliWrapper:
-    def __init__(self, open_spec_obj: "OpenSpec") -> None:
+    def __init__(self, open_spec: "OpenSpec") -> None:
         self.oas_cli = oas_cli = AppGroup(
             "oas",
             help="command line interface to control OAS of flask app and marshmallow schemas\n \
@@ -20,7 +20,7 @@ class __CliWrapper:
         Always consider revising the generated files. and caching the previous versions.",
         )
         def init():
-            open_spec_obj.init_command()
+            open_spec.init_command()
 
         @oas_cli.command(
             "build",
@@ -30,7 +30,7 @@ class __CliWrapper:
         @click.option("--validate", type=bool, default=True)
         @click.option("--cache", type=bool, default=True)
         def build(validate, cache):
-            open_spec_obj.build_command(validate=validate, cache=cache)
+            open_spec.build_command(validate=validate, cache=cache)
 
         # @click.option(
         #    "-o",
@@ -38,7 +38,7 @@ class __CliWrapper:
         #    is_flag=True,
         #    default=None,
         # )  # is_eager=True,
-        open_spec_obj.app.cli.add_command(oas_cli)
+        open_spec.app.cli.add_command(oas_cli)
 
 
 _OpenSpec__CliWrapper = __CliWrapper
