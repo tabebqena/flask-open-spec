@@ -1,7 +1,7 @@
 from copy import deepcopy
 from .oas_config import OasConfig
 import os
-from typing import Callable, Optional
+from typing import Callable, Optional, cast
 
 import click
 from apispec import APISpec
@@ -27,47 +27,11 @@ from ._utils import (
     remove_none,
     yaml_dump,
 )
-from ._parameters import get_app_paths, extract_path_parameters
-from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper
-from .__view import __ViewManager, _OpenSpec__ViewManager
-from .__loader import __load_data
-
-
-def _add_paths_to_spec(spec: APISpec, data):
-    app_paths_list = get_app_paths()
-
-    for path in app_paths_list:
-        for method in app_paths_list[path]:
-
-            summary: str = data.get("paths", {}).get(path, {}).get("summary")
-            description: str = (
-                data.get("paths", {}).get(path, {}).get("description")
-            )
-            parameters = clean_parameters_list(
-                data.get("paths", {}).get(path, {}).get("parameters", [])
-            )
-            operation = (
-                data.get("paths", {}).get(path, {}).get(method, {}) or {}
-            )
-            if operation and operation.get("responses", {}):
-                operation["responses"] = remove_none(
-                    operation.get("responses", {})
-                )
-            if operation and operation.get("requestBody", {}):
-                operation["requestBody"] = remove_none(
-                    operation.get("requestBody", {})
-                )
-            if operation and operation.get("parameters", {}):
-                operation["parameters"] = clean_parameters_list(
-                    operation.get("parameters", [])
-                )
-            spec.path(
-                path,
-                summary=summary,
-                description=description,
-                parameters=parameters,
-                operations={method: operation},
-            )
+from ._parameters import get_app_paths
+from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper  # noqa
+from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
+from .__loader import __load_data, _OpenSpec__load_data  # noqa
+from .__spec_wrapper import _get_spec_dict
 
 
 class OpenSpec:
@@ -156,16 +120,6 @@ class OpenSpec:
                 )
         self.__editor.update_snippets_files()
 
-    def __make_spec(self, data):
-        spec = APISpec(
-            title=data.get("info", {}).get("title", self.config.title),
-            version=data.get("info", {}).get("version", self.config.version),
-            openapi_version="3.0.2",
-            info=data.get("info", {}),
-            plugins=[MarshmallowPlugin()],
-        )
-        return spec
-
     def build_command(self, validate=None, cache=None):
         self.init_command(echo=False)
         if validate is None:
@@ -179,19 +133,19 @@ class OpenSpec:
                     self.config.oas_dir,
                     self.config.cache_dir,
                 )
-        data = __load_data(self)
-        spec = self.__make_spec(data)
-        _add_paths_to_spec(spec, data)
-
+        data = __load_data(self.config, self.__editor)
+        #print(137, data["paths"]["/gists/{gist_id}"]["put"]["requestBody"])
+        spec_data = _get_spec_dict(cast(dict, data), self.config)
+        #
         data = clean_data(
             merge_recursive(
                 [
-                    spec.to_dict(),
+                    spec_data,
                     data,
                 ]
             )
         )
-        if cached_final:
+        if cached_final and not cache:
             os.remove(cached_final)
         if validate:
             validate_spec(data)
