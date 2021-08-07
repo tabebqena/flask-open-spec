@@ -18,20 +18,26 @@
       type="text/javascript"></script>
     <script src="{{ url_for( blueprint_name+'.static', filename='swagger-ui-standalone-preset.js') }}"
       type="text/javascript"></script>
+
     <script type="text/javascript">
-      var ui = SwaggerUIBundle({
+      var base_config = {
         url: "{{ json_url }}",
         dom_id: '#swagger-ui-container',
-        deepLinking: true,
         presets: [
           SwaggerUIBundle.presets.apis,
           SwaggerUIStandalonePreset
         ],
         plugins: [
           SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "BaseLayout"
-      })
+        ]
+      }
+      custom_config = JSON.parse('{{ config_data   | safe}}');
+      const all_config = {
+        ...base_config,
+        ...custom_config
+      }
+      console.log(all_config["tryItOutEnabled"])
+      var ui = SwaggerUIBundle(all_config)
       window.ui = ui
     </script>
   </body>

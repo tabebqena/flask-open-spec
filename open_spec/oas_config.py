@@ -48,6 +48,7 @@ class OasConfig:
         "options",
         "trace",
     ]
+    __ui_config_url = None
 
     def __init__(self, app: Flask) -> None:
         with app.app_context():
@@ -151,6 +152,9 @@ class OasConfig:
                 )
                 if method not in self.excluded_methods
             ]
+            self.ui_config_url = current_app.config.get(
+                "OAS_UI_CONFIG_URL", self.__ui_config_url
+            )
 
         self.oas_dir = os.path.join(self.root_dir, self.__oas_dirname)
         self.fragments_dir = os.path.join(self.oas_dir, self.__fragments_dir)

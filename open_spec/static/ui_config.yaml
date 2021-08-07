@@ -1,0 +1,34 @@
+deepLinking: true
+
+displayOperationId: false
+defaultModelsExpandDepth: 1
+defaultModelExpandDepth: 1
+defaultModelRendering: 
+- "example"
+- "model"
+displayRequestDuration: false
+docExpansion: "list" # ["list"*, "full", "none"]
+filter: default 
+maxDisplayedTags:
+layout:  BaseLayout # StandaloneLayout # BaseLayout
+showExtensions: false 
+showCommonExtensions: false 
+
+useUnsafeMarkdown: false
+tryItOutEnabled: true
+
+oauth2RedirectUrl: ""
+showMutatedRequest: true
+supportedSubmitMethods: 
+- get
+  put
+  post
+  delete
+  options
+  head
+  patch
+  trace
+validatorUrl: https://validator.swagger.io/validator
+withCredentials: false
+
+
