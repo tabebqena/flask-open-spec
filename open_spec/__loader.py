@@ -48,7 +48,6 @@ def __load_data(config: "OasConfig", editor: "TemplatesEditor"):
     spec_files_data = editor.load_snippet_files()
     #
 
-    print(51, "loader", OasBuilder.data, id(OasBuilder.data))
     data = merge_recursive(
         [
             overrides,
