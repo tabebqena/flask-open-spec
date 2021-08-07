@@ -17,7 +17,7 @@ from flask import (
 from openapi_spec_validator import validate_spec
 
 from .builder import OasBuilder
-from ._editor import Editor
+from ._editor import TemplatesEditor
 from ._utils import (
     cache_file,
     clean_data,
@@ -87,7 +87,6 @@ def _load_or_fetch(save_files, file_path, fetcher, fetcher_kwargs={}):
 
 
 class OpenSpec:
-    
     def __init__(
         self,
         app: Flask = None,
@@ -132,15 +131,7 @@ class OpenSpec:
             auto_build=auto_build,
             authorization_handler=authorization_handler,
         )
-        self.__editor = Editor(self.config)
-
-    def __run_updaters(self):
-        self.__editor.upadte_draft_file()
-        self.__editor.upadte_paths_details_file()
-
-        self.__editor.update_path_parameters()
-        self.__editor.update_request_file()
-        self.__editor.update_responses_file()
+        self.__editor = TemplatesEditor(self.config)
 
     def init_command(self, echo=True):
         try:
@@ -156,7 +147,7 @@ class OpenSpec:
             for f in self.config.files_list:
                 if not os.path.exists(f):
                     open(f, "w").close()
-            self.__run_updaters()
+            self.__editor.__update_all()
             if echo and self.config.debug:
                 click.echo(
                     "Now, It is your time to edit the generated files:\
@@ -220,7 +211,6 @@ class OpenSpec:
         )
         overrides = load_file(self.config.override_file)
         spec_files_data = self.__editor.load_snippet_files()
-
         #
         data = merge_recursive(
             [
@@ -235,7 +225,6 @@ class OpenSpec:
                 draft_data,
             ]
         )
-
         data = _clean_invalid_paths(data)
         return data
 
@@ -253,7 +242,6 @@ class OpenSpec:
                     self.config.cache_dir,
                 )
         data = self.__load_data()
-
         spec = self.__make_spec(data)
         _add_paths_to_spec(spec, data)
 

@@ -32,7 +32,7 @@ from ._utils import (
 )
 
 
-class Editor:
+class TemplatesEditor:
     def __init__(self, config: OasConfig) -> None:
         self.config = config
         self.path_details = {}
@@ -41,7 +41,7 @@ class Editor:
 
         self.responses = {}
 
-    def upadte_draft_file(self):
+    def __upadte_draft_file(self):
         INFO_STUB["title"] = self.config.title
         INFO_STUB["version"] = self.config.version
         data = {
@@ -93,11 +93,11 @@ class Editor:
         self.path_details = data
         return data
 
-    def upadte_paths_details_file(self):
+    def __upadte_paths_details_file(self):
         data = self.extract_paths_details()
         yaml_dump("", data, self.config.paths_file)
 
-    def update_path_parameters(self):
+    def __update_path_parameters(self):
         data: dict = extract_path_parameters(
             allowed_methods=self.config.allowed_methods,
             long_stub=self.config.use_long_stubs,
@@ -135,7 +135,7 @@ class Editor:
         self.request_bodies = data
         return data
 
-    def update_request_file(self):
+    def __update_request_file(self):
         file_path = self.config.request_body_file
 
         previous_data = load_file(file_path, {})
@@ -165,7 +165,7 @@ class Editor:
         self.responses = data
         return data
 
-    def update_responses_file(self):
+    def __update_responses_file(self):
         data = self.extract_responses()
         file_path = self.config.responses_file
 
@@ -277,3 +277,10 @@ class Editor:
                         ]
                     )
         return data
+
+    def __update_all(self):
+        self.__upadte_draft_file()
+        self.__upadte_paths_details_file()
+        self.__update_path_parameters()
+        self.__update_request_file()
+        self.__update_responses_file()
