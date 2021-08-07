@@ -31,6 +31,7 @@ def request_body(
         )
 
     def decorator(func):
+
         for path in paths:
             path_ = app_path_oas_path(path)
             for method in methods:
@@ -47,7 +48,6 @@ def request_body(
                             **kwargs,
                         }
                     )
-
         @wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)

@@ -248,7 +248,6 @@ class TemplatesEditor:
                         yaml_dump("", data, file_path)
 
     def load_snippet_files(self):
-        print(self.config.spec_files_locator)
         if not self.config.spec_files_locator:
             return {}
         rules: List[Rule] = current_app.url_map._rules
