@@ -14,7 +14,7 @@ class OasBuilder:
         default_content_type="application/json",
         allowed_methods=VALID_METHODS_OPENAPI_V3,
     ) -> None:
-        data = data
+        OasBuilder.data = data
         self.default_required = default_required
         self.default_content_type = default_content_type
         self.allowed_methods = allowed_methods
@@ -63,8 +63,7 @@ class OasBuilder:
     ):
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
-
-        self.data = cast(
+        OasBuilder.data = cast(
             dict,
             merge_recursive(
                 [
@@ -90,7 +89,7 @@ class OasBuilder:
                             },
                         },
                     },
-                    self.data,
+                    OasBuilder.data,
                 ]
             ),
         )
@@ -111,7 +110,7 @@ class OasBuilder:
         self.__validate__(path, mthd, schema)
         content_type = content_type or self.default_content_type
 
-        self.data = cast(
+        OasBuilder.data = cast(
             dict,
             merge_recursive(
                 [
@@ -131,7 +130,7 @@ class OasBuilder:
                             }
                         }
                     },
-                    self.data,
+                    OasBuilder.data,
                 ]
             ),
         )
@@ -168,7 +167,7 @@ class OasBuilder:
             raise ValueError("You should specify only one of AND/OR not both")
 
         old = (
-            self.data.setdefault("paths", {})
+            OasBuilder.data.setdefault("paths", {})
             .setdefault(path, {})
             .setdefault(mthd, {})
             .setdefault("security", [])
@@ -176,13 +175,15 @@ class OasBuilder:
         if old and AND:
             sec = old
             sec[-1].update({security: scopes})
-            self.data["paths"][path][mthd]["security"] = sec
+            OasBuilder.data["paths"][path][mthd]["security"] = sec
 
         elif old and OR:
             sec = old + [{security: scopes}]
-            self.data["paths"][path][mthd]["security"] = sec
+            OasBuilder.data["paths"][path][mthd]["security"] = sec
         else:
-            self.data["paths"][path][mthd]["security"] = [{security: scopes}]
+            OasBuilder.data["paths"][path][mthd]["security"] = [
+                {security: scopes}
+            ]
 
     def parameter(
         self,
@@ -202,7 +203,7 @@ class OasBuilder:
         required = kwargs.get("required", self.default_required)
 
         parameters = (
-            self.data.setdefault("paths", {})
+            OasBuilder.data.setdefault("paths", {})
             .setdefault(path, {})
             .setdefault(mthd, {})
             .setdefault("parameters", [])
@@ -215,16 +216,16 @@ class OasBuilder:
             "required": required,
         }
         parameters.append(param)
-        self.data["paths"][path][method]["parameters"] = clean_parameters_list(
-            parameters
-        )
+        OasBuilder.data["paths"][path][method][
+            "parameters"
+        ] = clean_parameters_list(parameters)
 
     def path_details(self, path: str, summary="", description="", servers=[]):
-        path_data = self.data.setdefault("paths", {}).setdefault(path, {})
+        path_data = OasBuilder.data.setdefault("paths", {}).setdefault(path, {})
         if summary:
             path_data["summary"] = summary
         if description:
             path_data["description"] = description
         if servers:
             path_data["servers"] = servers
-        self.data["paths"][path] = path_data
+        OasBuilder.data["paths"][path] = path_data
