@@ -10,7 +10,7 @@ displayRequestDuration: false
 docExpansion: "list" # ["list"*, "full", "none"]
 filter: default 
 maxDisplayedTags:
-layout:  BaseLayout # StandaloneLayout # BaseLayout
+layout:  StandaloneLayout # StandaloneLayout # BaseLayout
 showExtensions: false 
 showCommonExtensions: false 
 

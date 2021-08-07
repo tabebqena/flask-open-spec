@@ -1,3 +1,4 @@
+import json
 import os
 from typing import TYPE_CHECKING
 
@@ -73,6 +74,8 @@ class __ViewManager:
                 endpoint=self.config.json_endpoint or "get_spec_json",
             )
 
+        self.ui_config_url = self.config.ui_config_url
+
         if self.config.register_ui_route:
             self.blueprint.add_url_rule(
                 self.config.spec_ui_url,
@@ -80,6 +83,14 @@ class __ViewManager:
                 endpoint=self.config.ui_endpoint or "get__spec_ui",
             )
         self.app.register_blueprint(self.blueprint)
+
+    def get_ui_config(self):
+        return load_file(
+            self.config.ui_config_url
+            or url_for(
+                self.__blueprint_name + ".static", filename="ui_config.yaml"
+            )
+        )
 
     def get_spec_dict(self):
         if not self.__built:
@@ -95,7 +106,11 @@ class __ViewManager:
         return jsonify(self.get_spec_dict())
 
     def get_spec_ui(self):
-
+        ui_config_url = self.config.ui_config_url
+        if not ui_config_url or not os.path.exists(ui_config_url):
+            ui_config_url = os.path.join(
+                os.path.dirname(__file__), "static", "ui_config.yaml"
+            )
         return render_template(
             "swagger-ui.html",
             blueprint_name=self.blueprint.name,
@@ -103,6 +118,13 @@ class __ViewManager:
                 self.config.json_endpoint
                 or self.__blueprint_name + ".get_spec_json"
             ),
+            config_url=url_for(
+                self.__blueprint_name + ".static",
+                filename="ui_config.yaml"
+                # self.__blueprint_name + ".static",
+                # filename="ui_config.json",
+            ),
+            config_data=json.dumps(load_file(ui_config_url)),
         )
 
 
