@@ -30,6 +30,7 @@ from ._utils import (
 from ._parameters import get_app_paths, extract_path_parameters
 from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper
 from .__view import __ViewManager, _OpenSpec__ViewManager
+from .__loader import __load_data
 
 
 def _add_paths_to_spec(spec: APISpec, data):
@@ -67,23 +68,6 @@ def _add_paths_to_spec(spec: APISpec, data):
                 parameters=parameters,
                 operations={method: operation},
             )
-
-
-def _clean_invalid_paths(data):
-    app_paths_list = get_app_paths()
-    data_paths = deepcopy(data.get("paths", {}))
-    keys = data.get("paths", {}).keys()
-    for path in keys:
-        if path not in app_paths_list:
-            del data_paths[path]
-    data["paths"] = data_paths
-    return data
-
-
-def _load_or_fetch(save_files, file_path, fetcher, fetcher_kwargs={}):
-    if save_files:
-        return load_file(file_path)
-    return fetcher(**fetcher_kwargs)
 
 
 class OpenSpec:
@@ -182,52 +166,6 @@ class OpenSpec:
         )
         return spec
 
-    def __load_data(self):
-        draft_data = load_file(self.config.draft_file)
-        paths_details = _load_or_fetch(
-            self.config.save_files,
-            self.config.paths_file,
-            self.__editor.extract_paths_details,
-        )
-        parameters = _load_or_fetch(
-            self.config.save_files,
-            self.config.parameters_file,
-            extract_path_parameters,
-            {
-                "long_stub": self.config.use_long_stubs,
-                "allowed_methods": self.config.allowed_methods,
-            },
-        )
-        requestBodies = _load_or_fetch(
-            self.config.save_files,
-            self.config.request_body_file,
-            self.__editor.extract_request_bodies,
-        )
-
-        responses = _load_or_fetch(
-            self.config.save_files,
-            self.config.responses_file,
-            self.__editor.extract_responses,
-        )
-        overrides = load_file(self.config.override_file)
-        spec_files_data = self.__editor.load_snippet_files()
-        #
-        data = merge_recursive(
-            [
-                overrides,
-                # decorators_data,
-                OasBuilder.data,
-                spec_files_data,
-                paths_details,
-                parameters,
-                requestBodies,
-                responses,
-                draft_data,
-            ]
-        )
-        data = _clean_invalid_paths(data)
-        return data
-
     def build_command(self, validate=None, cache=None):
         self.init_command(echo=False)
         if validate is None:
@@ -241,7 +179,7 @@ class OpenSpec:
                     self.config.oas_dir,
                     self.config.cache_dir,
                 )
-        data = self.__load_data()
+        data = __load_data(self)
         spec = self.__make_spec(data)
         _add_paths_to_spec(spec, data)
 
