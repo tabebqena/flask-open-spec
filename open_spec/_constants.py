@@ -80,18 +80,38 @@ RESPONSE_STUB_LONG = {
     "default": {
         "description": "",
         "headers": {},
-        "content": {"application/json": {"schema": None}},
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                },
+            },
+        },
         "links": {},
     },
     "200": {
         "description": "",
-        "content": {"application/json": {"schema": None}},
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                },
+            }
+        },
     },
 }
 RESPONSE_STUB_SHORT = {
     "default": {
-        # "description": "",
-        "content": {"application/json": {"schema": None}},
-    }
+        "description": "",
+        "content": {
+            "application/json": {
+                "schema": {
+                    "type": "object",
+                },
+            },
+        },
+    },
 }
+
+
 ###########
