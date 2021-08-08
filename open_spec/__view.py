@@ -43,7 +43,7 @@ class __ViewManager:
             if cached_final and os.path.exists(cached_final):
                 os.remove(cached_final)
         except Exception as e:
-            current_app.logger.warning(e)
+            current_app.logger.warning(e, e.__traceback__)
 
     def __register_callback(self):
         auto_build = (

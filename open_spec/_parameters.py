@@ -1,7 +1,7 @@
 import re
 from flask import current_app
 
-from typing import List, Literal
+from typing import Dict, List, Literal
 
 import werkzeug.routing
 from flask import current_app
@@ -34,12 +34,12 @@ def app_path_oas_path(app_path):
 
 
 #
-def get_app_paths():
+def get_app_paths() -> Dict[str, List[str]]:
     rules: List[Rule] = current_app.url_map._rules
-    paths = {}
+    paths: Dict[str, List[str]] = {}
     for r in rules:
         path = rule_to_path(r)
-        methods = __get_valid_methods(r)
+        methods: List[str] = __get_valid_methods(r)
         paths[path] = methods
     return paths
 
