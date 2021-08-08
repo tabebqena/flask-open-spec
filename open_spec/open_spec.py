@@ -72,7 +72,7 @@ class OpenSpec:
             self.config: OasConfig = OasConfig(app)
 
         __CliWrapper(self)
-        self.view_manager = __ViewManager(
+        self.__view_manager = __ViewManager(
             self,
             blueprint_name=blueprint_name,
             url_prefix=url_prefix,
@@ -133,15 +133,14 @@ class OpenSpec:
                     self.config.oas_dir,
                     self.config.cache_dir,
                 )
-        data = __load_data(self.config, self.__editor)
-        #print(137, data["paths"]["/gists/{gist_id}"]["put"]["requestBody"])
-        spec_data = _get_spec_dict(cast(dict, data), self.config)
+        row_data = __load_data(self.config, self.__editor)
+        spec_data = _get_spec_dict(cast(dict, row_data), self.config)
         #
         data = clean_data(
             merge_recursive(
                 [
                     spec_data,
-                    data,
+                    row_data,
                 ]
             )
         )
@@ -153,13 +152,14 @@ class OpenSpec:
         if self.config.debug:
             click.echo(self.config.final_file)
         # store data in snippets
-        self.__editor.update_snippets_files()
+        print("build ")
+        self.__editor.update_snippets_files(data)
 
     def get_spec_dict(self):
-        return self.view_manager.get_spec_dict()
+        return self.__view_manager.get_spec_dict()
 
     def get_spec_json(self):
-        return self.view_manager.get_spec_json()
+        return self.__view_manager.get_spec_json()
 
     def get_spec_ui(self):
-        return self.view_manager.get_spec_ui()
+        return self.__view_manager.get_spec_ui()
