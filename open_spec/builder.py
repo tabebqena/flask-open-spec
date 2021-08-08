@@ -17,7 +17,7 @@ class OasBuilder:
         OasBuilder.data = data
         self.default_required = default_required
         self.default_content_type = default_content_type
-        self.allowed_methods = allowed_methods
+        self.allowed_methods = allowed_methods + ["*"]
 
     def __validate__(self, path, method, schema):
         if path is not None and not path.startswith("/"):
@@ -55,7 +55,15 @@ class OasBuilder:
         self,
         path: str,
         method: Literal[
-            "get", "post", "put", "patch", "delete", "head", "options", "trace"
+            "get",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "head",
+            "options",
+            "trace",
+            "*",
         ],
         schema: Any,
         content_type: str = None,
@@ -63,6 +71,7 @@ class OasBuilder:
     ):
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
+
         OasBuilder.data = cast(
             dict,
             merge_recursive(
@@ -109,7 +118,6 @@ class OasBuilder:
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
         content_type = content_type or self.default_content_type
-
         OasBuilder.data = cast(
             dict,
             merge_recursive(
@@ -121,7 +129,9 @@ class OasBuilder:
                                     "responses": {
                                         str(code): {
                                             "content": {
-                                                "schema": schema,
+                                                content_type: {
+                                                    "schema": schema,
+                                                }
                                             },
                                             "description": description,
                                         },
@@ -134,21 +144,6 @@ class OasBuilder:
                 ]
             ),
         )
-
-        """self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-            mthd, {}
-        ).setdefault("responses", {}).setdefault(str(code), {}).setdefault(
-            "content", {}
-        ).setdefault(
-            content_type, {}
-        ).setdefault(
-            "schema", schema
-        )
-        self.data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-            mthd, {}
-        ).setdefault("responses", {}).setdefault(str(code), {}).setdefault(
-            "description", description
-        )"""
 
     def security_reqs(
         self,
@@ -229,3 +224,6 @@ class OasBuilder:
         if servers:
             path_data["servers"] = servers
         OasBuilder.data["paths"][path] = path_data
+
+
+oas_builder = OasBuilder()

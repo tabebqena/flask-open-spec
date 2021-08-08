@@ -1,5 +1,5 @@
 from functools import wraps
-from .builder import OasBuilder
+from .builder import oas_builder
 from typing import List, Literal, Union
 from ._parameters import VALID_METHODS_OPENAPI_V3, app_path_oas_path
 
@@ -37,7 +37,7 @@ def request_body(
             for method in methods:
                 method = method.lower()
                 for content_type in content_types:
-                    OasBuilder().request_body(
+                    oas_builder.request_body(
                         path_,
                         method,
                         schema,
@@ -48,6 +48,7 @@ def request_body(
                             **kwargs,
                         }
                     )
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
@@ -107,7 +108,7 @@ def response(
                 method = method.lower()
                 for code in codes:
                     for content_type in content_types:
-                        OasBuilder().response(
+                        oas_builder.response(
                             path=path_,
                             method=method,
                             code=code,
@@ -134,7 +135,7 @@ def path_details(paths: List[str], summary, description="", servers=[]):
     def decorator(func):
         for path in paths:
             path_ = app_path_oas_path(path)
-            OasBuilder().path_details(
+            oas_builder.path_details(
                 path=path_,
                 summary=summary,
                 description=description,
@@ -189,7 +190,7 @@ def parameter(
             path_ = app_path_oas_path(path)
             for method in methods:
                 method = method.lower()
-                OasBuilder().parameter(
+                oas_builder.parameter(
                     path_, method, in_, name, schema, description, **kwargs
                 )
 
@@ -240,7 +241,7 @@ def security_reqs(
             path_ = app_path_oas_path(path)
             for method in methods:
                 method = method.lower()
-                OasBuilder().security_reqs(
+                oas_builder.security_reqs(
                     path_, method, security, scopes, AND, OR
                 )
 
