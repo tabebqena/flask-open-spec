@@ -1,4 +1,4 @@
-from apispec import APISpec
+from apispec import APISpec, BasePlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
 from ._parameters import get_app_paths
 from ._utils import clean_parameters_list, remove_none, remove_empty, clean_data
@@ -22,7 +22,6 @@ def _add_paths_to_spec(spec: APISpec, data):
 
     for path in app_paths_list:
         for method in app_paths_list[path]:
-
             summary: str = data.get("paths", {}).get(path, {}).get("summary")
             description: str = (
                 data.get("paths", {}).get(path, {}).get("description")
