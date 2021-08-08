@@ -1,15 +1,24 @@
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from ._parameters import get_app_paths
-from ._utils import clean_parameters_list, remove_none, remove_empty
-from typing import TYPE_CHECKING
+from ._utils import clean_parameters_list, remove_none, remove_empty, clean_data
+from ._constants import RESPONSE_STUB_SHORT, RESPONSE_STUB_LONG
+from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .oas_config import OasConfig
 
 
+def get_valid_responses(responses: Dict[str, Dict]):
+    responses = remove_none(responses)
+    if not responses:
+        return RESPONSE_STUB_LONG
+    return responses
+
+
 def _add_paths_to_spec(spec: APISpec, data):
     app_paths_list = get_app_paths()
+    no_request_body_methods = ["get", "head"]
 
     for path in app_paths_list:
         for method in app_paths_list[path]:
@@ -24,10 +33,11 @@ def _add_paths_to_spec(spec: APISpec, data):
             operation = (
                 data.get("paths", {}).get(path, {}).get(method, {}) or {}
             )
-            if operation and operation.get("responses", {}):
-                operation["responses"] = remove_none(
+            if operation:
+                operation["responses"] = get_valid_responses(
                     operation.get("responses", {})
                 )
+
             if operation and operation.get("requestBody", {}):
                 operation["requestBody"] = remove_none(
                     operation.get("requestBody", {})
@@ -58,4 +68,5 @@ def _get_spec_dict(
     )
 
     _add_paths_to_spec(spec, data)
+
     return spec.to_dict()
