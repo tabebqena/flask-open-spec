@@ -6,7 +6,7 @@ from ._parameters import (
     preserve_user_edits,
 )
 import os
-from typing import List
+from typing import List, cast
 from werkzeug.routing import Rule
 from ._parameters import rule_to_path
 
@@ -74,13 +74,17 @@ class TemplatesEditor:
         )()
 
         for path in app_paths:
-            path_data = merge_recursive(
-                [prev.get("paths", {}).get(path, {}), path_stub]
+            path_data = cast(
+                dict,
+                merge_recursive(
+                    [prev.get("paths", {}).get(path, {}), path_stub]
+                ),
             )
             methods = app_paths[path]
             for method in methods:
-                if method.lower() in ["get", "delete", "head"]:
-                    continue
+                """if method.lower() in ["get", "delete", "head"]:
+                continue
+                """
                 if method.lower() not in self.config.allowed_methods:
                     continue
                 path_data[method] = merge_recursive(
@@ -123,12 +127,12 @@ class TemplatesEditor:
         for path in app_paths:
             methods = app_paths[path]
             for method in methods:
-                if method.lower() in ["get", "delete", "head"]:
+                method = method.lower()
+                if (
+                    method in ["get", "delete", "head"]
+                    or method not in self.config.allowed_methods
+                ):
                     continue
-                if method.lower() not in self.config.allowed_methods:
-                    continue
-                """if method.lower() == "options" and not document_options:
-                    continue"""
                 data.setdefault("paths", {}).setdefault(path, {}).setdefault(
                     method.lower(), {}
                 ).setdefault("requestBody", stub)
@@ -155,8 +159,6 @@ class TemplatesEditor:
         for path in app_paths:
             methods = app_paths[path]
             for method in methods:
-                """if method.lower() == "options" and not document_options:
-                continue"""
                 if method.lower() not in self.config.allowed_methods:
                     continue
                 data.setdefault("paths", {}).setdefault(path, {}).setdefault(
@@ -188,16 +190,17 @@ class TemplatesEditor:
             res_[2] = False
         return res_
 
-    def update_snippets_files(self):
+    def update_snippets_files(self, data={}):
         if not self.config.spec_files_locator:
             return
-        details = self.path_details or self.extract_paths_details()
-        parameters = self.parameters or extract_path_parameters(
+
+        details = self.extract_paths_details()
+        parameters = extract_path_parameters(
             long_stub=self.config.use_long_stubs,
             allowed_methods=self.config.allowed_methods,
         )
-        requests = self.request_bodies or self.extract_request_bodies()
-        responses = self.responses or self.extract_responses()
+        requests = self.extract_request_bodies()
+        responses = self.extract_responses()
 
         rules: List[Rule] = current_app.url_map._rules
         kwargs = {}
@@ -210,42 +213,56 @@ class TemplatesEditor:
                 )
 
                 if file_path:
-
                     if editable or not os.path.exists(file_path):
-                        data = merge_recursive(
-                            [
-                                load_file(file_path, {}),
-                                {
-                                    "paths": {
-                                        key: details.get("paths", {}).get(
-                                            kwargs["path"]
-                                        )
-                                    }
-                                },
-                                {
-                                    "paths": {
-                                        key: parameters.get("paths", {}).get(
-                                            kwargs["path"]
-                                        )
-                                    }
-                                },
-                                {
-                                    "paths": {
-                                        key: requests.get("paths", {}).get(
-                                            kwargs["path"]
-                                        )
-                                    }
-                                },
-                                {
-                                    "paths": {
-                                        key: responses.get("paths", {}).get(
-                                            kwargs["path"]
-                                        )
-                                    }
-                                },
-                            ]
-                        )
-                        yaml_dump("", data, file_path)
+                        _data = {}
+                        if not data:
+                            _data = merge_recursive(
+                                [
+                                    load_file(file_path, {}),
+                                    {
+                                        "paths": {
+                                            key: details.get("paths", {}).get(
+                                                kwargs["path"]
+                                            )
+                                        }
+                                    },
+                                    {
+                                        "paths": {
+                                            key: parameters.get(
+                                                "paths", {}
+                                            ).get(kwargs["path"])
+                                        }
+                                    },
+                                    {
+                                        "paths": {
+                                            key: requests.get("paths", {}).get(
+                                                kwargs["path"]
+                                            )
+                                        }
+                                    },
+                                    {
+                                        "paths": {
+                                            key: responses.get("paths", {}).get(
+                                                kwargs["path"]
+                                            )
+                                        }
+                                    },
+                                ]
+                            )
+                        else:
+                            _data = merge_recursive(
+                                [
+                                    load_file(file_path, {}),
+                                    {
+                                        "paths": {
+                                            kwargs["path"]: data.get(
+                                                "paths", {}
+                                            ).get(kwargs["path"])
+                                        }
+                                    },
+                                ]
+                            )
+                        yaml_dump("", _data, file_path)
 
     def load_snippet_files(self):
         if not self.config.spec_files_locator:
