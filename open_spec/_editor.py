@@ -9,7 +9,6 @@ import os
 from typing import List, cast
 from werkzeug.routing import Rule
 from ._parameters import rule_to_path
-
 from ._constants import (
     EXTERNALDOCS_STUB,
     INFO_STUB,
@@ -41,7 +40,7 @@ class TemplatesEditor:
 
         self.responses = {}
 
-    def __upadte_draft_file(self):
+    def update_draft_file(self):
         INFO_STUB["title"] = self.config.title
         INFO_STUB["version"] = self.config.version
         data = {
@@ -193,29 +192,59 @@ class TemplatesEditor:
     def update_snippets_files(self, data={}):
         if not self.config.spec_files_locator:
             return
+        if data:
+            rules: List[Rule] = current_app.url_map._rules
+            kwargs = {}
+            for r in rules:
+                kwargs["rule"] = r
+                kwargs["path"] = rule_to_path(r)
+                if self.config.spec_files_locator:
+                    (
+                        file_path,
+                        key,
+                        editable,
+                    ) = self.__call_spec_files_locator_func(kwargs)
 
-        details = self.extract_paths_details()
-        parameters = extract_path_parameters(
-            long_stub=self.config.use_long_stubs,
-            allowed_methods=self.config.allowed_methods,
-        )
-        requests = self.extract_request_bodies()
-        responses = self.extract_responses()
+                    if file_path:
+                        if editable or not os.path.exists(file_path):
+                            _data = merge_recursive(
+                                [
+                                    {
+                                        "paths": {
+                                            kwargs["path"]: data.get(
+                                                "paths", {}
+                                            ).get(kwargs["path"])
+                                        }
+                                    },
+                                    load_file(file_path, {}),
+                                ]
+                            )
+                            yaml_dump("", _data, file_path)
+        else:
+            details = self.extract_paths_details()
+            parameters = extract_path_parameters(
+                long_stub=self.config.use_long_stubs,
+                allowed_methods=self.config.allowed_methods,
+            )
+            requests = self.extract_request_bodies()
+            responses = self.extract_responses()
 
-        rules: List[Rule] = current_app.url_map._rules
-        kwargs = {}
-        for r in rules:
-            kwargs["rule"] = r
-            kwargs["path"] = rule_to_path(r)
-            if self.config.spec_files_locator:
-                file_path, key, editable = self.__call_spec_files_locator_func(
-                    kwargs
-                )
+            rules: List[Rule] = current_app.url_map._rules
+            kwargs = {}
+            for r in rules:
+                kwargs["rule"] = r
+                kwargs["path"] = rule_to_path(r)
+                if self.config.spec_files_locator:
+                    (
+                        file_path,
+                        key,
+                        editable,
+                    ) = self.__call_spec_files_locator_func(kwargs)
 
-                if file_path:
-                    if editable or not os.path.exists(file_path):
-                        _data = {}
-                        if not data:
+                    if file_path:
+                        if editable or not os.path.exists(file_path):
+                            _data = {}
+                            # if not data:
                             _data = merge_recursive(
                                 [
                                     load_file(file_path, {}),
@@ -249,20 +278,21 @@ class TemplatesEditor:
                                     },
                                 ]
                             )
-                        else:
-                            _data = merge_recursive(
-                                [
-                                    load_file(file_path, {}),
-                                    {
-                                        "paths": {
-                                            kwargs["path"]: data.get(
-                                                "paths", {}
-                                            ).get(kwargs["path"])
-                                        }
-                                    },
-                                ]
-                            )
-                        yaml_dump("", _data, file_path)
+                            """else:
+                                _data = merge_recursive(
+                                    [
+                                        load_file(file_path, {}),
+                                        {
+                                            "paths": {
+                                                kwargs["path"]: data.get(
+                                                    "paths", {}
+                                                ).get(kwargs["path"])
+                                            }
+                                        },
+                                    ]
+                                )"""
+                            # print(256, _data)
+                            yaml_dump("", _data, file_path)
 
     def load_snippet_files(self):
         if not self.config.spec_files_locator:
@@ -295,7 +325,7 @@ class TemplatesEditor:
         return data
 
     def __update_all(self):
-        self.__upadte_draft_file()
+        self.update_draft_file()
         self.__upadte_paths_details_file()
         self.__update_path_parameters()
         self.__update_request_file()

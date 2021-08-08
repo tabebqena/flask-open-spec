@@ -86,12 +86,11 @@ class OpenSpec:
             os.makedirs(self.config.oas_dir)
         except:
             pass
+        try:
+            os.makedirs(self.config.fragments_dir)
+        except Exception as e:
+            pass
         if self.config.save_files:
-            try:
-                os.makedirs(self.config.fragments_dir)
-            except Exception as e:
-                pass
-
             for f in self.config.files_list:
                 if not os.path.exists(f):
                     open(f, "w").close()
@@ -110,11 +109,13 @@ class OpenSpec:
         else:
             if not os.path.exists(self.config.override_file):
                 open(self.config.override_file, "w").close()
-            if echo and self.config.debug:
 
+            self.__editor.update_draft_file()
+            if echo and self.config.debug:
                 click.echo(
                     "- generated files:\
-                        \n - {0}\n ".format(
+                        \n - {0}\n - {1}\n ".format(
+                        self.config.draft_file,
                         self.config.override_file,
                     )
                 )
@@ -152,7 +153,6 @@ class OpenSpec:
         if self.config.debug:
             click.echo(self.config.final_file)
         # store data in snippets
-        print("build ")
         self.__editor.update_snippets_files(data)
 
     def get_spec_dict(self):
