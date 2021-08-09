@@ -44,6 +44,7 @@ class OpenSpec:
         authorization_handler: Callable = None,
         config_obj: OasConfig = None,
     ) -> None:
+        self._app_paths = {}
 
         if app:
             self.init_app(
@@ -79,9 +80,10 @@ class OpenSpec:
             auto_build=auto_build,
             authorization_handler=authorization_handler,
         )
-        self.__editor = TemplatesEditor(self.config)
+        self.__editor = TemplatesEditor(self)
 
     def init_command(self, echo=True):
+        self._app_paths = get_app_paths()
         try:
             os.makedirs(self.config.oas_dir)
         except:
@@ -90,11 +92,11 @@ class OpenSpec:
             os.makedirs(self.config.fragments_dir)
         except Exception as e:
             pass
-        if self.config.save_files:
-            for f in self.config.files_list:
+        if self.config.save_sections_files:
+            for f in self.config.sections_files_list:
                 if not os.path.exists(f):
                     open(f, "w").close()
-            self.__editor.__update_all()
+            self.__editor._update_all()
             if echo and self.config.debug:
                 click.echo(
                     "Now, It is your time to edit the generated files:\

@@ -2,7 +2,6 @@ from flask import current_app
 from .oas_config import OasConfig
 from ._parameters import (
     extract_path_parameters,
-    get_app_paths,
     preserve_user_edits,
 )
 import os
@@ -29,11 +28,19 @@ from ._utils import (
     merge_recursive,
     yaml_dump,
 )
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .open_spec import OpenSpec
 
+#
+#
 class TemplatesEditor:
-    def __init__(self, config: OasConfig) -> None:
-        self.config = config
+    def __init__(self, open_spec: "OpenSpec") -> None:
+        self.open_spec = open_spec
+        self.config = open_spec.config
+        self.app_paths = self.open_spec._app_paths
+
         self.path_details = {}
         self.parameters = {}
         self.request_bodies = {}
@@ -59,7 +66,6 @@ class TemplatesEditor:
 
     def extract_paths_details(self):
         data = {}
-        app_paths = get_app_paths()
         prev = load_file(self.config.paths_file, {})
         path_stub = (
             lambda: PATHS_ITEM_STUB_LONG
@@ -72,14 +78,14 @@ class TemplatesEditor:
             else OPERATION_STUB_SHORT
         )()
 
-        for path in app_paths:
+        for path in self.app_paths:
             path_data = cast(
                 dict,
                 merge_recursive(
                     [prev.get("paths", {}).get(path, {}), path_stub]
                 ),
             )
-            methods = app_paths[path]
+            methods = self.app_paths[path]
             for method in methods:
                 """if method.lower() in ["get", "delete", "head"]:
                 continue
@@ -117,7 +123,7 @@ class TemplatesEditor:
 
     def extract_request_bodies(self):
         data = {}
-        app_paths = get_app_paths()
+        app_paths = self.app_paths
         stub = (
             lambda: REQUEST_STUB_LONG
             if self.config.use_long_stubs
@@ -149,7 +155,7 @@ class TemplatesEditor:
 
     def extract_responses(self):
         data = {}
-        app_paths = get_app_paths()
+        app_paths = self.app_paths
         stub = (
             lambda: RESPONSE_STUB_LONG
             if self.config.use_long_stubs
@@ -324,7 +330,7 @@ class TemplatesEditor:
                     )
         return data
 
-    def __update_all(self):
+    def _update_all(self):
         self.update_draft_file()
         self.__upadte_paths_details_file()
         self.__update_path_parameters()
