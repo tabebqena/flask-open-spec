@@ -50,7 +50,6 @@ def __load_data(config: "OasConfig", editor: "TemplatesEditor"):
     )
     overrides = load_file(config.override_file)
     snippet_files_data = editor.load_snippet_files()
-    print("snippet files data: ", snippet_files_data)
     #
     builder_data = _parse_star_method(config, OasBuilder.data)
     data = merge_recursive(
