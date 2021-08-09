@@ -14,13 +14,13 @@ class __CliWrapper:
                     This tool can help by generating stub files, and merging them to form the OAS file",
         )
 
-        @oas_cli.command(
+        """@oas_cli.command(
             "init",
             help="Generate files from stubs, If file already present, It will merged with the stub data \n \
         Always consider revising the generated files. and caching the previous versions.",
         )
         def init():
-            open_spec.init_command()
+            open_spec.init_command()"""
 
         @oas_cli.command(
             "build",
