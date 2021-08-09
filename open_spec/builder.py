@@ -5,6 +5,11 @@ from marshmallow import Schema, class_registry
 
 
 class OasBuilder:
+    """
+    Builder class to create the open api specifications at runtime.
+    The generated spec will be loaded by the `OpenSpec` object.
+    """
+
     data: dict = {}
 
     def __init__(
@@ -51,6 +56,297 @@ class OasBuilder:
             if not valid:
                 raise schema_error
 
+    @staticmethod
+    def info(
+        title,
+        version="1.0.0",
+        termsOfService=None,
+        license_name=None,
+        license_url=None,
+        contact_name=None,
+        contact_email=None,
+        contact_url=None,
+        description=None,
+    ) -> None:
+        """
+        Add/edit the info section of the api.
+
+        [extended_summary]
+
+        Args:
+          title: The api title
+          version:  (Default value = "1.0.0")
+          termsOfService: text describing the term of service of this api (Default value = None)
+          license_name:  (Default value = None)
+          license_url:  (Default value = None)
+          contact_name:  (Default value = None)
+          contact_email:  (Default value = None)
+          contact_url:  (Default value = None)
+          description:  description of the api (Default value = None)
+
+        Returns:
+        """
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "info": {
+                            "title": title,
+                            "version": version,
+                            "termsOfService": termsOfService,
+                            "license": {
+                                "name": license_name,
+                                "url": license_url,
+                            },
+                            "contact": {
+                                "name": contact_name,
+                                "email": contact_email,
+                                "url": contact_url,
+                            },
+                            "description": description,
+                        },
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def externalDocs(url, description=""):
+        """
+        Add/edit externalDocs section of the api
+
+        Args:
+          url: url to the external docs
+          description:  (Default value = "")
+
+        Returns:
+
+        """
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "externalDocs": {
+                            "url": url,
+                            "description": description,
+                        }
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def tag(name, description="", external_docs_url=""):
+        """
+        Add tag to the tags section of the api.
+
+        Args:
+          name: tag name
+          description:  (Default value = "")
+          external_docs_url:  (Default value = "")
+
+        Returns:
+
+        Examples:
+
+        >>> OasBuilder.tag("MyTag")
+        >>> print( OasBuilder.data["tags"] )
+        [{"name": "MyTag", "description": ""}]
+        """
+        tag = {
+            "name": name,
+            "description": description,
+        }
+        if external_docs_url:
+            tag["externalDocs"] = {
+                "url": external_docs_url,
+            }
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {"tags": [tag]},
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def server(url, description):
+        """
+        Add server to the servers section of the api
+
+        Args:
+          url: server url
+          description: server description
+
+        Returns:
+
+        Examples:
+
+        >>> OasBuilder.server("http://spec.host.com", "spec server")
+        >>> print( OasBuilder.data["servers"] )
+        [{"url": "http://spec.host.com", "description": "spec server"}]
+
+        """
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {"servers": [{"url": url, "description": description}]},
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def basic_security_schema(name: str):
+        """
+        api_key_security_schema generate apiKey authentivation schema and storing it in the api components
+
+        Args:
+          name: str:  arbitrary name for the security scheme
+
+        Returns: None
+
+        Examples:
+
+        >>> OasBuilder.basic_security_schema("basicAuth")
+        >>> print(OasBuilder.data["components"]["securitySchemes"])
+        >>> {""basicAuth"": {"type": "http", "scheme": "basic"}}
+
+        Note: The securitySchemes section alone is not enough; you must also use security for the API key to have effect.
+        security can also be set on the operation level instead of globally.
+
+        security:
+        - basicAuth: []
+
+        """
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "securitySchemes": {
+                                name: {"type": "http", "scheme": "basic"}
+                            }
+                        }
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def api_key_security_schema(
+        name: str,
+        in_: Literal["header", "query", "cookie"] = "header",
+        location_name: str = "X-API-KEY",
+    ):
+        """api_key_security_schema generate apiKey authentivation schema and storing it in the api components
+
+        Args:
+          name(str): arbitrary name for the security scheme
+          in_(Literal[, optional): where the security key will be sent, can be "header", "query" or "cookie" , defaults to "header"
+          location_name(str, optional): name of the header, query parameter or cookie], defaults to "X-API-KEY"
+          name: str:
+          in_: Literal["header":
+          "query":
+          "cookie"]:  (Default value = "header")
+          location_name: str:  (Default value = "X-API-KEY")
+
+        Returns: None
+
+
+        Examples:
+
+        This example defines an API key named X-API-Key sent as a request header X-API-Key: <key>.
+           The key name ApiKeyAuth is an arbitrary name for
+           the security scheme (not to be confused with the API key name,
+           which is specified by the name key). The name ApiKeyAuth is used again
+           in the security section to apply this security scheme to the API.
+
+        >>> OasBuilder.api_key_security_schema("ApiKeyAuth", in_="header", location_name="X-API-Key")
+        >>> print(OasBuilder.data["components"]["securitySchemes"])
+        >>> {"ApiKeyAuth": {"type": "apiKey",  "in": "header" ,"name": "X-API-Key"}}
+
+        Note: The securitySchemes section alone is not enough; you must also use security for the API key to have effect.
+        security can also be set on the operation level instead of globally.
+
+        security:
+        - ApiKeyAuth: []
+
+        """
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "securitySchemes": {
+                                name: {
+                                    "type": "apiKey",
+                                    "in": in_,
+                                    "name": location_name,
+                                }
+                            }
+                        }
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def bearer_security_schema(name: str, bearerFormat: str = "JWT"):
+        """
+        bearer_security_schema generate bearer authentivation schema and storing it in the api components
+
+        Args:
+            name (str): [description]
+            bearerFormat (str, optional): [description]. Defaults to "JWT".
+
+
+        Returns: None
+
+        Examples:
+
+        >>> OasBuilder.bearer_security_schema("bearerAuth")
+        >>> print(OasBuilder.data["components"]["securitySchemes"])
+        >>> {"bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}
+
+        Note: The securitySchemes section alone is not enough; you must also use security for the API key to have effect.
+        security can also be set on the operation level instead of globally.
+
+        security:
+        - bearerAuth: []
+
+        """
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "securitySchemes": {
+                                name: {
+                                    "type": "http",
+                                    "scheme": "bearer",
+                                    "bearerFormat": bearerFormat,
+                                }
+                            }
+                        }
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
     def request_body(
         self,
         path: str,
@@ -69,6 +365,17 @@ class OasBuilder:
         content_type: str = None,
         **kwargs
     ):
+        """
+        request_body [summary]
+
+        [extended_summary]
+
+        Args:
+            path (str): [description]
+            method (Literal[): [description]
+            schema (Any): [description]
+            content_type (str, optional): [description]. Defaults to None.
+        """
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
 
@@ -115,6 +422,27 @@ class OasBuilder:
         content_type: str = None,
         description: str = "",
     ):
+        """
+
+        Args:
+          path: str:
+          method: Literal["get":
+          "post":
+          "put":
+          "patch":
+          "delete":
+          "head":
+          "options":
+          "trace"]:
+          schema: Any:
+          code: Union[int:
+          str]:  (Default value = "default")
+          content_type: str:  (Default value = None)
+          description: str:  (Default value = "")
+
+        Returns:
+
+        """
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
         content_type = content_type or self.default_content_type
@@ -156,6 +484,26 @@ class OasBuilder:
         AND=False,
         OR=False,
     ):
+        """
+
+        Args:
+          path: str:
+          method: Literal["get":
+          "post":
+          "put":
+          "patch":
+          "delete":
+          "head":
+          "options":
+          "trace"]:
+          security: str:
+          scopes:  (Default value = [])
+          AND:  (Default value = False)
+          OR:  (Default value = False)
+
+        Returns:
+
+        """
         mthd = method.lower()
         self.__validate__(path, mthd, None)
         if AND and OR:
@@ -192,6 +540,27 @@ class OasBuilder:
         description,
         **kwargs
     ):
+        """
+
+        Args:
+          path: str:
+          method: Literal["get":
+          "post":
+          "put":
+          "patch":
+          "delete":
+          "head":
+          "options":
+          "trace"]:
+          in_:
+          name:
+          schema:
+          description:
+          **kwargs:
+
+        Returns:
+
+        """
 
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
@@ -216,6 +585,17 @@ class OasBuilder:
         ] = clean_parameters_list(parameters)
 
     def path_details(self, path: str, summary="", description="", servers=[]):
+        """
+
+        Args:
+          path: str:
+          summary:  (Default value = "")
+          description:  (Default value = "")
+          servers:  (Default value = [])
+
+        Returns:
+
+        """
         path_data = OasBuilder.data.setdefault("paths", {}).setdefault(path, {})
         if summary:
             path_data["summary"] = summary
