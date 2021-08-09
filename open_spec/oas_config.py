@@ -8,7 +8,7 @@ class OasConfig:
     debug = False
     validate_on_build = True
     cache_on_build = True
-    save_files = True
+    save_sections_files = True
     auto_build = False
     # document_options = False
     blueprint_url_prefix = "/spec"
@@ -62,7 +62,9 @@ class OasConfig:
             self.cache_on_build = current_app.config.get(
                 "OAS_CACHE_ON_BUILD", self.cache_on_build
             )
-            self.save_files = current_app.config.get("OAS_FILE_SAVE", True)
+            self.save_sections_files = current_app.config.get(
+                "OAS_FILE_SAVE", True
+            )
             self.auto_build = current_app.config.get("OAS_AUTO_BUILD", False)
             """self.document_options = current_app.config.get(
                 "OAS_DOCUMENT_OPTIONS", False
@@ -179,7 +181,7 @@ class OasConfig:
             self.fragments_dir, self.__responses_filename
         )
 
-        self.files_list = [
+        self.sections_files_list = [
             self.draft_file,
             self.paths_file,
             self.parameters_file,

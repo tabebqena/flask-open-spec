@@ -24,12 +24,12 @@ def _load_or_fetch(save_files, file_path, fetcher, fetcher_kwargs={}):
 def __load_data(config: "OasConfig", editor: "TemplatesEditor"):
     draft_data = load_file(config.draft_file)
     paths_details = _load_or_fetch(
-        config.save_files,
+        config.save_sections_files,
         config.paths_file,
         editor.extract_paths_details,
     )
     parameters = _load_or_fetch(
-        config.save_files,
+        config.save_sections_files,
         config.parameters_file,
         extract_path_parameters,
         {
@@ -38,13 +38,13 @@ def __load_data(config: "OasConfig", editor: "TemplatesEditor"):
         },
     )
     requestBodies = _load_or_fetch(
-        config.save_files,
+        config.save_sections_files,
         config.request_body_file,
         editor.extract_request_bodies,
     )
 
     responses = _load_or_fetch(
-        config.save_files,
+        config.save_sections_files,
         config.responses_file,
         editor.extract_responses,
     )
