@@ -1,5 +1,8 @@
+from copy import deepcopy
+from distutils.command.config import config
+from pprint import pprint
+import click
 from flask import current_app
-from .oas_config import OasConfig
 from ._parameters import (
     extract_path_parameters,
     preserve_user_edits,
@@ -36,18 +39,60 @@ if TYPE_CHECKING:
 #
 #
 class TemplatesEditor:
-    def __init__(self, open_spec: "OpenSpec") -> None:
+    def __init__(self, open_spec: "OpenSpec", echo=False) -> None:
         self.open_spec = open_spec
         self.config = open_spec.config
         self.app_paths = self.open_spec._app_paths
+        self.init(echo)
+        self.template_data: dict = {}
 
-        self.path_details = {}
-        self.parameters = {}
-        self.request_bodies = {}
+    def init(self, echo=True):
+        self.make_template_data()
+        self.mk_dirs_files()
+        self._update_all()
+        self.echo(echo)
 
-        self.responses = {}
+    def mk_dirs_files(self):
+        try:
+            os.makedirs(self.config.oas_dir)
+        except:
+            pass
+        try:
+            os.makedirs(self.config.fragments_dir)
+            os.makedirs(self.config.paths_details_dir)
+        except Exception as e:
+            pass
+        if self.config.save_sections_files:
+            for f in self.config.sections_files_list:
+                if not os.path.exists(f):
+                    open(f, "w").close()
+        else:
+            if not os.path.exists(self.config.override_file):
+                open(self.config.override_file, "w").close()
 
-    def update_draft_file(self):
+    def echo(self, echo=True):
+        if not echo and self.config.debug:
+            return
+        if self.config.save_sections_files:
+            click.echo(
+                "Now, It is your time to edit the generated files:\
+                        \n - {0}\n - {1}\n - {2}\n - {3}\n - {4}\n ".format(
+                    self.config.oas_sections_file,
+                    # self.config.request_body_file,
+                    # self.config.responses_file,
+                    self.config.override_file,
+                )
+            )
+        else:
+            click.echo(
+                "- generated files:\
+                        \n - {0}\n - {1}\n ".format(
+                    self.config.oas_sections_file,
+                    self.config.override_file,
+                )
+            )
+
+    def make_template_data(self):
         INFO_STUB["title"] = self.config.title
         INFO_STUB["version"] = self.config.version
         data = {
@@ -58,15 +103,9 @@ class TemplatesEditor:
             "components": {"securitySchemes": SECURITY_SCHEMAS_STUB},
             "externalDocs": EXTERNALDOCS_STUB,
         }
-        if os.path.exists(self.config.draft_file):
-            prev = load_file(self.config.draft_file, None)
-            if prev:
-                data = merge_recursive([prev, data])
-        yaml_dump("", data, self.config.draft_file)
-
-    def extract_paths_details(self):
-        data = {}
-        prev = load_file(self.config.paths_file, {})
+        #
+        paths_details = {}
+        #
         path_stub = (
             lambda: PATHS_ITEM_STUB_LONG
             if self.config.use_long_stubs
@@ -77,110 +116,104 @@ class TemplatesEditor:
             if self.config.use_long_stubs
             else OPERATION_STUB_SHORT
         )()
-
-        for path in self.app_paths:
-            path_data = cast(
-                dict,
-                merge_recursive(
-                    [prev.get("paths", {}).get(path, {}), path_stub]
-                ),
-            )
-            methods = self.app_paths[path]
-            for method in methods:
-                """if method.lower() in ["get", "delete", "head"]:
-                continue
-                """
-                if method.lower() not in self.config.allowed_methods:
-                    continue
-                path_data[method] = merge_recursive(
-                    [
-                        prev.get("paths", {}).get(path, {}).get(method, {}),
-                        operation_stub,
-                    ]
-                )
-            data.setdefault("paths", {}).setdefault(path, path_data)
-        self.path_details = data
-        return data
-
-    def __upadte_paths_details_file(self):
-        data = self.extract_paths_details()
-        yaml_dump("", data, self.config.paths_file)
-
-    def __update_path_parameters(self):
-        data: dict = extract_path_parameters(
-            allowed_methods=self.config.allowed_methods,
-            long_stub=self.config.use_long_stubs,
-        )
-        file_path = self.config.parameters_file
-        previous = load_file(file_path, {})
-        data = preserve_user_edits(
-            data,
-            previous,
-            allowed_methods=self.config.allowed_methods,
-        )
-        yaml_dump("", data, file_path)
-        self.parameters = data
-
-    def extract_request_bodies(self):
-        data = {}
-        app_paths = self.app_paths
-        stub = (
+        request_stub = (
             lambda: REQUEST_STUB_LONG
             if self.config.use_long_stubs
             else REQUEST_STUB_SHORT
         )()
-        for path in app_paths:
-            methods = app_paths[path]
-            for method in methods:
-                method = method.lower()
-                if (
-                    method in ["get", "delete", "head"]
-                    or method not in self.config.allowed_methods
-                ):
-                    continue
-                data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-                    method.lower(), {}
-                ).setdefault("requestBody", stub)
-        self.request_bodies = data
-        return data
 
-    def __update_request_file(self):
-        file_path = self.config.request_body_file
-
-        previous_data = load_file(file_path, {})
-        data = self.extract_request_bodies()
-
-        data = merge_recursive([data, previous_data])
-        yaml_dump("", data, file_path)
-
-    def extract_responses(self):
-        data = {}
-        app_paths = self.app_paths
-        stub = (
+        response_stub = (
             lambda: RESPONSE_STUB_LONG
             if self.config.use_long_stubs
             else RESPONSE_STUB_SHORT
         )()
-        for path in app_paths:
-            methods = app_paths[path]
+        #
+        for path in self.app_paths:
+            path_data = cast(dict, deepcopy(path_stub))
+            methods = self.app_paths[path]
             for method in methods:
                 if method.lower() not in self.config.allowed_methods:
                     continue
-                data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-                    method, {}
-                ).setdefault("responses", stub)
-        self.responses = data
-        return data
+                path_data[method] = deepcopy(operation_stub)
+                if method not in ["get", "delete", "head"]:
+                    path_data[method]["requestBody"] = deepcopy(request_stub)
+                path_data[method]["responses"] = deepcopy(response_stub)
+            paths_details[path] = path_data
+        #
+        parameters: dict = extract_path_parameters(
+            allowed_methods=self.config.allowed_methods,
+            long_stub=self.config.use_long_stubs,
+        )
+        #
+        self.template_data = cast(
+            dict, merge_recursive([{"paths": paths_details}, parameters, data])
+        )
+        yaml_dump("", self.template_data, "res.yaml")
 
-    def __update_responses_file(self):
-        data = self.extract_responses()
-        file_path = self.config.responses_file
+    def _update_all(self):
+        self.update_sections_file()
+        self.__update_paths_details_file()
+        # self.__update_path_parameters()
 
-        previous_data = load_file(file_path, {})
-        data = merge_recursive([data, previous_data])
-        yaml_dump("", data, file_path)
+    def update_sections_file(self):
+        data = cast(dict, deepcopy(self.template_data))
+        data["paths"] = None
+        del data["paths"]
 
-    def __call_spec_files_locator_func(self, kwargs) -> List:
+        if os.path.exists(self.config.oas_sections_file):
+            prev = load_file(self.config.oas_sections_file, None)
+            if prev:
+                data = merge_recursive([prev, data])
+        yaml_dump("", data, self.config.oas_sections_file)
+
+    def __update_paths_details_file(self):
+        rules = current_app.url_map._rules
+        for rule in rules:
+            path = rule_to_path(rule)
+            file_path = None
+            editable = True
+            if self.config.spec_files_locator:
+                file_path, key, editable = self.__call_spec_files_locator_func(
+                    rule=rule, path=path
+                )
+            if not file_path:
+                path_ = path.replace("/", ".") + ".yaml"
+
+                file_path = os.path.join(self.config.paths_details_dir, path_)
+            if not self.config.spec_files_locator:
+                editable = True
+            # print(rule, " -:> ", file_path, editable)
+            prev = load_file(file_path)
+            user_edited_parameters = preserve_user_edits(
+                {
+                    "paths": {
+                        path: self.template_data.get("paths", {}).get(path, {})
+                    }
+                },
+                prev,
+                self.config.allowed_methods,
+            )
+            path_data = merge_recursive(
+                [
+                    prev,
+                    user_edited_parameters,
+                    {
+                        "paths": {
+                            path: self.template_data.get("paths", {}).get(
+                                path, {}
+                            )
+                        }
+                    },
+                ]
+            )
+            try:
+                os.makedirs(os.path.dirname(file_path))
+            except:
+                pass
+
+            yaml_dump("", path_data, file_path)
+
+    def __call_spec_files_locator_func(self, **kwargs) -> List:
         if not self.config.spec_files_locator:
             return [None, None, None]
         res = self.config.spec_files_locator(**kwargs)
@@ -195,144 +228,24 @@ class TemplatesEditor:
             res_[2] = False
         return res_
 
-    def update_snippets_files(self, data={}):
-        if not self.config.spec_files_locator:
-            return
-        if data:
-            rules: List[Rule] = current_app.url_map._rules
-            kwargs = {}
-            for r in rules:
-                kwargs["rule"] = r
-                kwargs["path"] = rule_to_path(r)
-                if self.config.spec_files_locator:
-                    (
-                        file_path,
-                        key,
-                        editable,
-                    ) = self.__call_spec_files_locator_func(kwargs)
-
-                    if file_path:
-                        if editable or not os.path.exists(file_path):
-                            _data = merge_recursive(
-                                [
-                                    {
-                                        "paths": {
-                                            kwargs["path"]: data.get(
-                                                "paths", {}
-                                            ).get(kwargs["path"])
-                                        }
-                                    },
-                                    load_file(file_path, {}),
-                                ]
-                            )
-                            yaml_dump("", _data, file_path)
-        else:
-            details = self.extract_paths_details()
-            parameters = extract_path_parameters(
-                long_stub=self.config.use_long_stubs,
-                allowed_methods=self.config.allowed_methods,
-            )
-            requests = self.extract_request_bodies()
-            responses = self.extract_responses()
-
-            rules: List[Rule] = current_app.url_map._rules
-            kwargs = {}
-            for r in rules:
-                kwargs["rule"] = r
-                kwargs["path"] = rule_to_path(r)
-                if self.config.spec_files_locator:
-                    (
-                        file_path,
-                        key,
-                        editable,
-                    ) = self.__call_spec_files_locator_func(kwargs)
-
-                    if file_path:
-                        if editable or not os.path.exists(file_path):
-                            _data = {}
-                            # if not data:
-                            _data = merge_recursive(
-                                [
-                                    load_file(file_path, {}),
-                                    {
-                                        "paths": {
-                                            key: details.get("paths", {}).get(
-                                                kwargs["path"]
-                                            )
-                                        }
-                                    },
-                                    {
-                                        "paths": {
-                                            key: parameters.get(
-                                                "paths", {}
-                                            ).get(kwargs["path"])
-                                        }
-                                    },
-                                    {
-                                        "paths": {
-                                            key: requests.get("paths", {}).get(
-                                                kwargs["path"]
-                                            )
-                                        }
-                                    },
-                                    {
-                                        "paths": {
-                                            key: responses.get("paths", {}).get(
-                                                kwargs["path"]
-                                            )
-                                        }
-                                    },
-                                ]
-                            )
-                            """else:
-                                _data = merge_recursive(
-                                    [
-                                        load_file(file_path, {}),
-                                        {
-                                            "paths": {
-                                                kwargs["path"]: data.get(
-                                                    "paths", {}
-                                                ).get(kwargs["path"])
-                                            }
-                                        },
-                                    ]
-                                )"""
-                            # print(256, _data)
-                            yaml_dump("", _data, file_path)
-
     def load_snippet_files(self):
-        if not self.config.spec_files_locator:
-            return {}
-        rules: List[Rule] = current_app.url_map._rules
-        kwargs = {}
         data = {}
-        for r in rules:
-            kwargs["rule"] = r
-            kwargs["path"] = rule_to_path(r)
+        rules = current_app.url_map._rules
+        for rule in rules:
+            path = rule_to_path(rule)
+            file_path = None
+            editable = True
             if self.config.spec_files_locator:
                 file_path, key, editable = self.__call_spec_files_locator_func(
-                    kwargs
+                    rule=rule, path=path
                 )
-                if file_path:
-                    file_data = load_file(file_path, {})
+            if not file_path:
+                path_ = path.replace("/", ".") + ".yaml"
 
-                    data = merge_recursive(
-                        [
-                            data,
-                            {
-                                "paths": {
-                                    kwargs["path"]: file_data.get(
-                                        "paths", {}
-                                    ).get(key, {})
-                                }
-                            },
-                        ]
-                    )
+                file_path = os.path.join(self.config.paths_details_dir, path_)
+            if not self.config.spec_files_locator:
+                editable = True
+            # print(rule, " -:> ", file_path, editable)
+            file_data = load_file(file_path, {})
+            data = merge_recursive([data, file_data])
         return data
-
-    def _update_all(self):
-        self.update_draft_file()
-        self.__upadte_paths_details_file()
-        self.__update_path_parameters()
-        self.__update_request_file()
-        self.__update_responses_file()

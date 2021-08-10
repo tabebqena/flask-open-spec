@@ -189,11 +189,9 @@ def extract_path_parameters(
         params = __rule_to_params(r, long_stub=long_stub) or []
         methods = __get_valid_methods(r)
         for method in methods:
-            """if method.lower() == "options" and not document_options:
-            continue"""
             if method.lower() not in allowed_methods:
                 continue
-            data.setdefault("paths", {}).setdefault(path, {}).setdefault(
-                method, {}
-            ).setdefault("parameters", params)
+        data.setdefault("paths", {}).setdefault(path, {}).setdefault(
+            "parameters", params
+        )
     return data

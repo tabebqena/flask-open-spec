@@ -23,12 +23,8 @@ class OasConfig:
     __fragments_dir = ".fragments"
     __cache_dir = ".cache"
     __paths_details_dir = "paths"
-    __parameters_filename = "parameters.yaml"
-    __paths_filename = "paths.yaml"
-    __request_bodies_filename = "request_bodies.yaml"
-    __responses_filename = "responses.yaml"
     __override_file_name = "override_oas.yaml"
-    __draft_file_name = "draft.yaml"
+    __oas_sections_file_name = "oas_sections.yaml"
     __spec_json_url = "/spec"
     __spec_ui_url = "/spec-ui"
     __spec_files_locator = None
@@ -67,9 +63,6 @@ class OasConfig:
                 "OAS_FILE_SAVE", True
             )
             self.auto_build = current_app.config.get("OAS_AUTO_BUILD", False)
-            """self.document_options = current_app.config.get(
-                "OAS_DOCUMENT_OPTIONS", False
-            )"""
 
             self.blueprint_url_prefix = current_app.config.get(
                 "OAS_BLUEPRINT_URL_PREFIX", self.blueprint_url_prefix
@@ -115,23 +108,11 @@ class OasConfig:
                 "CACHE_DIRNAME", self.__cache_dir
             )
 
-            self.__draft_file_name = current_app.config.get(
-                "DRAFT_FILENAME", self.__draft_file_name
-            )
-            self.__paths_filename = current_app.config.get(
-                "PATHS_FILENAME", self.__paths_filename
+            self.__oas_sections_file_name = current_app.config.get(
+                "DRAFT_FILENAME", self.__oas_sections_file_name
             )
             self.__paths_details_dir = current_app.config.get(
                 "PATHS_DETAILS_DIR", self.__paths_details_dir
-            )
-            self.__parameters_filename = current_app.config.get(
-                "PARAMETERS_FILENAME", self.__parameters_filename
-            )
-            self.__request_bodies_filename = current_app.config.get(
-                "REQUEST_BODIES_FILENAME", self.__request_bodies_filename
-            )
-            self.__responses_filename = current_app.config.get(
-                "RESPONSES_FILENAME", self.__responses_filename
             )
 
             self.__final_file_name = current_app.config.get(
@@ -174,27 +155,10 @@ class OasConfig:
             self.oas_dir, self.__override_file_name
         )
         self.final_file = os.path.join(self.oas_dir, self.__final_file_name)
-        self.draft_file = os.path.join(
-            self.fragments_dir, self.__draft_file_name
+        self.oas_sections_file = os.path.join(
+            self.fragments_dir, self.__oas_sections_file_name
         )
-        self.parameters_file = os.path.join(
-            self.fragments_dir, self.__parameters_filename
-        )
-        self.paths_file = os.path.join(
-            self.fragments_dir, self.__paths_filename
-        )
-        self.request_body_file = os.path.join(
-            self.fragments_dir, self.__request_bodies_filename
-        )
-        self.responses_file = os.path.join(
-            self.fragments_dir, self.__responses_filename
-        )
-
         self.sections_files_list = [
-            self.draft_file,
-            self.paths_file,
-            self.parameters_file,
-            self.request_body_file,
-            self.responses_file,
+            self.oas_sections_file,
             self.override_file,
         ]
