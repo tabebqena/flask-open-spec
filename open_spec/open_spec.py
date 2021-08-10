@@ -1,37 +1,18 @@
-from copy import deepcopy
-from .oas_config import OasConfig
 import os
-from typing import Callable, Optional, cast
+from typing import Callable, cast
 
 import click
-from apispec import APISpec
-from apispec.ext.marshmallow import MarshmallowPlugin
-from flask import (
-    Blueprint,
-    Flask,
-    current_app,
-    jsonify,
-    render_template,
-    url_for,
-)
+from flask import Flask
 from openapi_spec_validator import validate_spec
 
-from .builder import OasBuilder
-from ._editor import TemplatesEditor
-from ._utils import (
-    cache_file,
-    clean_data,
-    clean_parameters_list,
-    load_file,
-    merge_recursive,
-    remove_none,
-    yaml_dump,
-)
-from ._parameters import get_app_paths
 from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper  # noqa
-from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
 from .__loader import __load_data, _OpenSpec__load_data  # noqa
 from .__spec_wrapper import _get_spec_dict
+from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
+from ._editor import TemplatesEditor
+from ._parameters import get_app_paths
+from ._utils import cache_file, clean_data, merge_recursive, yaml_dump
+from .oas_config import OasConfig
 
 
 class OpenSpec:
@@ -66,12 +47,10 @@ class OpenSpec:
         config_obj: OasConfig = None,
     ):
         self.app = app
-
         if config_obj:
             self.config: OasConfig = config_obj
         else:
             self.config: OasConfig = OasConfig(app)
-
         __CliWrapper(self)
         self.__view_manager = __ViewManager(
             self,
@@ -80,48 +59,11 @@ class OpenSpec:
             auto_build=auto_build,
             authorization_handler=authorization_handler,
         )
-        self.__editor = TemplatesEditor(self)
 
     def init_command(self, echo=True):
         self._app_paths = get_app_paths()
-        try:
-            os.makedirs(self.config.oas_dir)
-        except:
-            pass
-        try:
-            os.makedirs(self.config.fragments_dir)
-        except Exception as e:
-            pass
-        if self.config.save_sections_files:
-            for f in self.config.sections_files_list:
-                if not os.path.exists(f):
-                    open(f, "w").close()
-            self.__editor._update_all()
-            if echo and self.config.debug:
-                click.echo(
-                    "Now, It is your time to edit the generated files:\
-                        \n - {0}\n - {1}\n - {2}\n - {3}\n - {4}\n ".format(
-                        self.config.draft_file,
-                        self.config.parameters_file,
-                        self.config.request_body_file,
-                        self.config.responses_file,
-                        self.config.override_file,
-                    )
-                )
-        else:
-            if not os.path.exists(self.config.override_file):
-                open(self.config.override_file, "w").close()
-
-            self.__editor.update_draft_file()
-            if echo and self.config.debug:
-                click.echo(
-                    "- generated files:\
-                        \n - {0}\n - {1}\n ".format(
-                        self.config.draft_file,
-                        self.config.override_file,
-                    )
-                )
-        self.__editor.update_snippets_files()
+        self.__editor = TemplatesEditor(self, echo)
+        # self.__editor.init(echo)
 
     def build_command(self, validate=None, cache=None):
         self.init_command(echo=False)
@@ -137,6 +79,7 @@ class OpenSpec:
                     self.config.cache_dir,
                 )
         row_data = __load_data(self.config, self.__editor)
+
         spec_data = _get_spec_dict(cast(dict, row_data), self.config)
         #
         data = clean_data(
@@ -154,8 +97,6 @@ class OpenSpec:
         yaml_dump("", data, file=self.config.final_file)
         if self.config.debug:
             click.echo(self.config.final_file)
-        # store data in snippets
-        self.__editor.update_snippets_files(data)
 
     def get_spec_dict(self):
         return self.__view_manager.get_spec_dict()
