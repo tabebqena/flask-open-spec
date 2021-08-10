@@ -30,7 +30,7 @@ class __CliWrapper:
         @click.option("--validate", type=bool, default=True)
         @click.option("--cache", type=bool, default=True)
         def build(validate, cache):
-            open_spec.build_command(validate=validate, cache=cache)
+            open_spec.build(validate=validate, cache=cache)
 
         # @click.option(
         #    "-o",

@@ -39,7 +39,7 @@ class __ViewManager:
                 self.config.cache_dir,
             )
 
-            self.open_spec.build_command()
+            self.open_spec.build()
             if cached_final and os.path.exists(cached_final):
                 os.remove(cached_final)
         except Exception as e:
@@ -94,7 +94,7 @@ class __ViewManager:
 
     def get_spec_dict(self):
         if not self.__built:
-            self.open_spec.build_command()
+            self.open_spec.build()
             self.__built = True
 
         return load_file(self.config.final_file)

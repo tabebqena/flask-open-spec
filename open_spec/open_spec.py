@@ -26,6 +26,7 @@ class OpenSpec:
         config_obj: OasConfig = None,
     ) -> None:
         self._app_paths = {}
+        self.row_data = {}
 
         if app:
             self.init_app(
@@ -60,13 +61,13 @@ class OpenSpec:
             authorization_handler=authorization_handler,
         )
 
-    def init_command(self, echo=True):
+    def init(self, echo=True):
         self._app_paths = get_app_paths()
         self.__editor = TemplatesEditor(self, echo)
         # self.__editor.init(echo)
 
-    def build_command(self, validate=None, cache=None):
-        self.init_command(echo=False)
+    def build(self, validate=None, cache=None):
+        self.init(echo=False)
         if validate is None:
             validate = self.config.validate_on_build
         cached_final = None
@@ -78,15 +79,14 @@ class OpenSpec:
                     self.config.oas_dir,
                     self.config.cache_dir,
                 )
-        row_data = __load_data(self.config, self.__editor)
+        self.row_data = __load_data(self.config, self.__editor)
 
-        spec_data = _get_spec_dict(cast(dict, row_data), self.config)
-        #
+        spec_data = _get_spec_dict(cast(dict, self.row_data), self.config)
         data = clean_data(
             merge_recursive(
                 [
                     spec_data,
-                    row_data,
+                    self.row_data,
                 ]
             )
         )
