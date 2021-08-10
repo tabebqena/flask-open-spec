@@ -22,6 +22,7 @@ class OasConfig:
     __oas_dirname = ".oas"
     __fragments_dir = ".fragments"
     __cache_dir = ".cache"
+    __paths_details_dir = "paths"
     __parameters_filename = "parameters.yaml"
     __paths_filename = "paths.yaml"
     __request_bodies_filename = "request_bodies.yaml"
@@ -120,6 +121,9 @@ class OasConfig:
             self.__paths_filename = current_app.config.get(
                 "PATHS_FILENAME", self.__paths_filename
             )
+            self.__paths_details_dir = current_app.config.get(
+                "PATHS_DETAILS_DIR", self.__paths_details_dir
+            )
             self.__parameters_filename = current_app.config.get(
                 "PARAMETERS_FILENAME", self.__parameters_filename
             )
@@ -160,7 +164,12 @@ class OasConfig:
 
         self.oas_dir = os.path.join(self.root_dir, self.__oas_dirname)
         self.fragments_dir = os.path.join(self.oas_dir, self.__fragments_dir)
+
         self.cache_dir = os.path.join(self.oas_dir, self.__cache_dir)
+        self.paths_details_dir = os.path.join(
+            self.fragments_dir, self.__paths_details_dir
+        )
+
         self.override_file = os.path.join(
             self.oas_dir, self.__override_file_name
         )
