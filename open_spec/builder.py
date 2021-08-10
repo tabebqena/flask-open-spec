@@ -1,7 +1,10 @@
+import marshmallow
 from ._utils import clean_parameters_list, merge_recursive
 from ._parameters import VALID_METHODS_OPENAPI_V3
-from typing import Any, Literal, Union, cast
+from typing import Any, Literal, Optional, Union, cast
 from marshmallow import Schema, class_registry
+from apispec import APISpec
+from apispec.ext.marshmallow import MarshmallowPlugin
 
 
 class OasBuilder:
@@ -22,17 +25,19 @@ class OasBuilder:
         OasBuilder.data = data
         self.default_required = default_required
         self.default_content_type = default_content_type
-        self.allowed_methods = allowed_methods + ["*"]
+        # self.allowed_methods = allowed_methods + ["*"]
 
-    def __validate__(self, path, method, schema):
+    @staticmethod
+    def __validate__(path, method, schema):
+        allowed_methods = VALID_METHODS_OPENAPI_V3 + ["*"]
         if path is not None and not path.startswith("/"):
             raise ValueError("path {0} should start with `/`".format(path))
         if (
-            method is not None and not method in self.allowed_methods
+            method is not None and not method in allowed_methods
         ):  # VALID_METHODS_OPENAPI_V3:
             raise ValueError(
                 "method should be one of allowed methods {0}".format(
-                    ", ".join(self.allowed_methods)
+                    ", ".join(allowed_methods)
                 )
             )
         schema_error = TypeError(
@@ -46,6 +51,8 @@ class OasBuilder:
         if schema:
             valid = False
             if isinstance(schema, type) and issubclass(schema, Schema):
+                valid = True
+            elif isinstance(schema, Schema):
                 valid = True
             elif type(schema) == str:
                 sc = class_registry.get_class(cast(str, schema))
@@ -347,6 +354,243 @@ class OasBuilder:
             ),
         )
 
+    @staticmethod
+    def component_schema(schema):
+        OasBuilder.__validate__(None, None, schema)
+
+        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
+        spec.path(
+            "/invalid",
+            operations={
+                "get": {
+                    "responses": {
+                        "default": {
+                            "content": {"application/json": {"schema": schema}}
+                        }
+                    }
+                },
+            },
+        )
+        dict_ = spec.to_dict()
+        name = list(dict_["components"]["schemas"].keys())[0]
+        schema_data = dict_["components"]["schemas"][name]
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {"components": {"schemas": {name: schema_data}}},
+                    OasBuilder.data,
+                ]
+            ),
+        )
+        return name
+
+    @staticmethod
+    def component_response(
+        schema: Any,
+        response_name: Optional[str],
+        content_type: str,
+        description: str = "",
+    ):
+        OasBuilder.__validate__(None, None, schema)
+
+        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
+        spec.path(
+            "/invalid",
+            operations={
+                "get": {
+                    "responses": {
+                        "default": {
+                            "content": {
+                                content_type: {
+                                    "schema": schema,
+                                }
+                            },
+                            "description": description,
+                        },
+                    }
+                },
+            },
+        )
+        dict_ = spec.to_dict()
+        response_data = (
+            dict_.get("paths", {})
+            .get("/invalid", {})
+            .get("get", {})
+            .get("responses", {})
+            .get("default", {})
+        )
+        schemas = dict_.get("components", {}).get("schemas", {})
+        schema_name = list(schemas.keys())[0]
+        schema_data = (
+            dict_.get("components", {}).get("schemas", {}).get(schema_name)
+        )
+
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "responses": {response_name: response_data},
+                            "schemas": {schema_name: schema_data},
+                        },
+                    },
+                    OasBuilder.data,
+                ],
+            ),
+        )
+
+    @staticmethod
+    def component_request_body(
+        schema: Any, content_type: str, request_body_name: str, **kwargs
+    ):
+        OasBuilder.__validate__(None, None, schema)
+        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
+        spec.path(
+            "/invalid",
+            operations={
+                "get": {
+                    "requestBody": {
+                        "content": {
+                            content_type: {
+                                "schema": schema,
+                            }
+                        },
+                    }
+                },
+            },
+        )
+        dict_ = spec.to_dict()
+        body_data = (
+            dict_.get("paths", {})
+            .get("/invalid", {})
+            .get("get", {})
+            .get("requestBody", {})
+        )
+        schemas = dict_.get("components", {}).get("schemas", {})
+        schema_name = list(schemas.keys())[0]
+        schema_data = (
+            dict_.get("components", {}).get("schemas", {}).get(schema_name)
+        )
+
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "requestBodies": {request_body_name: body_data},
+                            "schemas": {schema_name: schema_data},
+                        },
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+        # self.data["paths"][path][mthd]["requestBody"] = request_body
+
+    @staticmethod
+    def component_parameter(
+        parameter_name, in_, name, schema, description="", **kwargs
+    ):
+        OasBuilder.__validate__(None, None, schema)
+
+        required = kwargs.get("required", False)
+
+        param = {
+            "in": in_,
+            "name": name,
+            "schema": schema,
+            "description": description,
+            "required": required,
+        }
+
+        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
+        spec.path("/invalid", operations={"get": {"parameters": [param]}})
+        dict_ = spec.to_dict()
+        param_data = (
+            dict_.get("paths", {})
+            .get("/invalid", {})
+            .get("get", {})
+            .get("parameters", [])[0]
+        )
+
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "parameters": {parameter_name: param_data},
+                            #     "schemas": {schema_name: schema_data},
+                        },
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
+    @staticmethod
+    def component_header(header_name, schema, description=""):
+        OasBuilder.__validate__(None, None, schema)
+        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
+        spec.path(
+            "/invalid",
+            operations={
+                "get": {
+                    "responses": {
+                        "200": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "string",
+                                    },
+                                }
+                            },
+                            "headers": {
+                                header_name: {
+                                    "schema": schema,
+                                    "description": description,
+                                }
+                            },
+                        },
+                    }
+                }
+            },
+        )
+        dict_ = spec.to_dict()
+        header_data = (
+            dict_.get("paths", {})
+            .get("/invalid", {})
+            .get("get", {})
+            .get("responses", {})
+            .get("200", {})
+            .get("headers", {})
+            .get(header_name, {})
+        )
+
+        schemas = dict_.get("components", {}).get("schemas", {})
+        schema_name = list(schemas.keys())[0]
+        schema_data = (
+            dict_.get("components", {}).get("schemas", {}).get(schema_name)
+        )
+
+        OasBuilder.data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "headers": {header_name: header_data},
+                            "schemas": {schema_name: schema_data},
+                        },
+                    },
+                    OasBuilder.data,
+                ]
+            ),
+        )
+
     def request_body(
         self,
         path: str,
@@ -378,7 +622,6 @@ class OasBuilder:
         """
         mthd = method.lower()
         self.__validate__(path, mthd, schema)
-
         OasBuilder.data = cast(
             dict,
             merge_recursive(
