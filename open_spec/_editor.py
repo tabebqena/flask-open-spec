@@ -171,18 +171,13 @@ class TemplatesEditor:
         for rule in rules:
             path = rule_to_path(rule)
             file_path = None
-            editable = True
             if self.config.spec_files_locator:
-                file_path, key, editable = self.__call_spec_files_locator_func(
+                file_path = self.__call_spec_files_locator_func(
                     rule=rule, path=path
                 )
             if not file_path:
                 path_ = path.replace("/", ".") + ".yaml"
-
                 file_path = os.path.join(self.config.paths_details_dir, path_)
-            if not self.config.spec_files_locator:
-                editable = True
-            # print(rule, " -:> ", file_path, editable)
             prev = load_file(file_path)
             user_edited_parameters = preserve_user_edits(
                 {
@@ -213,20 +208,10 @@ class TemplatesEditor:
 
             yaml_dump("", path_data, file_path)
 
-    def __call_spec_files_locator_func(self, **kwargs) -> List:
+    def __call_spec_files_locator_func(self, **kwargs) -> str:
         if not self.config.spec_files_locator:
-            return [None, None, None]
-        res = self.config.spec_files_locator(**kwargs)
-        res_ = [None, None, False]
-        if type(res) == tuple:
-            res_[0] = res[0] or None
-            res_[1] = res[1] or kwargs["path"]
-            res_[2] = res[2] or False
-        else:
-            res_[0] = res
-            res_[1] = kwargs["path"]
-            res_[2] = False
-        return res_
+            return ""
+        return self.config.spec_files_locator(**kwargs)
 
     def load_snippet_files(self):
         data = {}
@@ -234,18 +219,13 @@ class TemplatesEditor:
         for rule in rules:
             path = rule_to_path(rule)
             file_path = None
-            editable = True
             if self.config.spec_files_locator:
-                file_path, key, editable = self.__call_spec_files_locator_func(
+                file_path = self.__call_spec_files_locator_func(
                     rule=rule, path=path
                 )
             if not file_path:
                 path_ = path.replace("/", ".") + ".yaml"
-
                 file_path = os.path.join(self.config.paths_details_dir, path_)
-            if not self.config.spec_files_locator:
-                editable = True
-            # print(rule, " -:> ", file_path, editable)
             file_data = load_file(file_path, {})
             data = merge_recursive([data, file_data])
         return data
