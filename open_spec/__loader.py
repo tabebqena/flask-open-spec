@@ -3,8 +3,7 @@ from typing import Dict, TYPE_CHECKING
 
 from ._parameters import (
     extract_path_parameters,
-    get_app_paths,
-    VALID_METHODS_OPENAPI_V3,
+    get_app_paths
 )
 from ._utils import load_file, merge_recursive
 from .builder import OasBuilder
@@ -12,7 +11,6 @@ from .builder import OasBuilder
 if TYPE_CHECKING:
     from ._editor import TemplatesEditor
     from .oas_config import OasConfig
-    from .open_spec import OpenSpec
 
 
 def _load_or_fetch(save_files, file_path, fetcher, fetcher_kwargs={}):

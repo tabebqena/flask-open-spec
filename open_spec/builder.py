@@ -1,4 +1,3 @@
-import marshmallow
 from ._utils import clean_parameters_list, merge_recursive
 from ._parameters import VALID_METHODS_OPENAPI_V3
 from typing import Any, Literal, Optional, Union, cast

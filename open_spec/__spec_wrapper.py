@@ -1,8 +1,8 @@
-from apispec import APISpec, BasePlugin
+from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from ._parameters import get_app_paths
-from ._utils import clean_parameters_list, remove_none, remove_empty, clean_data
-from ._constants import RESPONSE_STUB_SHORT, RESPONSE_STUB_LONG
+from ._utils import clean_parameters_list, remove_none
+from ._constants import RESPONSE_STUB_LONG
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:

@@ -1,7 +1,7 @@
 import re
 from flask import current_app
 
-from typing import Dict, List, Literal
+from typing import Dict, List
 
 import werkzeug.routing
 from flask import current_app
