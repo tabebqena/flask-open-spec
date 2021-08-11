@@ -6,6 +6,7 @@ requirements = [
     "apispec>=4.7.1",
     "click>=8.0.1",
     "Flask",
+    "blinker",
     "marshmallow",
     "PyYAML",
     "openapi-spec-validator",
