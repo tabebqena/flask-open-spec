@@ -1,4 +1,5 @@
 import os
+from pprint import pprint
 from typing import Callable, cast
 
 import click
@@ -9,6 +10,10 @@ from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper  # noqa
 from .__loader import __load_data, _OpenSpec__load_data  # noqa
 from .__spec_wrapper import _get_spec_dict
 from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
+from .__validator import (
+    __RequestsValidator,
+    _OpenSpec__RequestsValidator,
+)  # noqa
 from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
 from ._utils import cache_file, clean_data, merge_recursive, yaml_dump
@@ -27,6 +32,7 @@ class OpenSpec:
     ) -> None:
         self._app_paths = {}
         self.row_data = {}
+        self.final_oas = {}
 
         if app:
             self.init_app(
@@ -60,6 +66,8 @@ class OpenSpec:
             auto_build=auto_build,
             authorization_handler=authorization_handler,
         )
+        if self.config.validate_requests:
+            self.__requests_validator = __RequestsValidator(self)
 
     def init(self, echo=True):
         self._app_paths = get_app_paths()
@@ -80,7 +88,7 @@ class OpenSpec:
                     self.config.cache_dir,
                 )
         self.row_data = __load_data(self.config, self.__editor)
-
+        # pprint(self.row_data)
         spec_data = _get_spec_dict(cast(dict, self.row_data), self.config)
         data = clean_data(
             merge_recursive(
@@ -95,6 +103,7 @@ class OpenSpec:
         if validate:
             validate_spec(data)
         yaml_dump("", data, file=self.config.final_file)
+        self.final_oas = data
         if self.config.debug:
             click.echo(self.config.final_file)
 

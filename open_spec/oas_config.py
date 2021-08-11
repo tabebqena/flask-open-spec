@@ -10,9 +10,9 @@ class OasConfig:
     cache_on_build = True
     save_sections_files = True
     auto_build = False
-    # document_options = False
     blueprint_url_prefix = "/spec"
     blueprint_name = "spec_bp"
+    validate_requests = False
     __register_blueprint = True
     __register_json_route = True
     __register_ui_route = True
@@ -63,6 +63,11 @@ class OasConfig:
                 "OAS_FILE_SAVE", True
             )
             self.auto_build = current_app.config.get("OAS_AUTO_BUILD", False)
+            self.validate_requests = current_app.config.get(
+                "OAS_VALIDATE_REQUESTS", False
+            )
+            if self.validate_requests:
+                self.auto_build = True
 
             self.blueprint_url_prefix = current_app.config.get(
                 "OAS_BLUEPRINT_URL_PREFIX", self.blueprint_url_prefix
