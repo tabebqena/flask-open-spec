@@ -93,25 +93,35 @@ class __RequestsValidator:
 
     def __validate_request_body(self, app: Flask):
         body_data = None
-        valid = {}
+        validation_errors = {}
         schema, is_required = self.get_request_body_schema(
             request.mimetype, rule_to_path(request.url_rule), request.method
         )
-        g.request_body_data = None
-        g.request_body_data_valid = valid
-        g.request_body_data_error = "no schema"
+        body_data = cast(dict, self.get_request_body_data())
+        self.set_g(body_data)
+
         if schema:
-            body_data = cast(dict, self.get_request_body_data())
-            valid = schema.validate(data=body_data)
-            if valid and is_required:
-                res = make_response(jsonify(valid), HTTPStatus.BAD_REQUEST)
+            validation_errors = schema.validate(data=body_data)
+            if validation_errors and is_required:
+                res = make_response(
+                    jsonify(validation_errors), HTTPStatus.BAD_REQUEST
+                )
                 abort(res)
-            elif valid:
-                schema = cast(Schema, schema)
-                body_data = cast(dict, body_data)
-                g.request_body_data_error = "invalid"
-                g.request_body_data = body_data  # schema.load(body_data)
-                g.request_body_data_valid = valid
+            schema = cast(Schema, schema)
+            body_data = cast(dict, body_data)
+            #
+            self.set_g(
+                body_data,
+                validation_errors,
+                (lambda: "invalid" if validation_errors else None)(),
+            )
+        else:
+            self.set_g(body_data, validation_errors, "noschema")
+
+    def set_g(self, data, validation_errors={}, error=None):
+        g.request_body_data = data
+        g.request_body_data_valid = validation_errors
+        g.request_body_data_error = error
 
     def validate_x_schema(self, data, mt):
         x_schema = data.get("content", {}).get(mt, {}).get("x-schema")
