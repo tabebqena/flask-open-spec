@@ -4,9 +4,9 @@ from typing import Callable, cast
 
 import click
 from flask import Flask
+from flask.cli import AppGroup
 from openapi_spec_validator import validate_spec
 
-from .__cli_wrapper import __CliWrapper, _OpenSpec__CliWrapper  # noqa
 from .__loader import __load_data, _OpenSpec__load_data  # noqa
 from .__spec_wrapper import _get_spec_dict
 from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
@@ -18,6 +18,26 @@ from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
 from ._utils import cache_file, clean_data, merge_recursive, yaml_dump
 from .oas_config import OasConfig
+
+
+def set_cli(open_spec: "OpenSpec"):
+    oas_cli = AppGroup(
+        "oas",
+        help="command line interface to control OAS of flask app and marshmallow schemas\n \
+                    This tool can help by generating stub files, and merging them to form the OAS file",
+    )
+
+    @oas_cli.command(
+        "build",
+        help="Extract data from all marshmallow schemas, add them in the right place, \n \
+            merge all files from .generated dir in one file and apply overrides if present in overrides file.",
+    )
+    @click.option("--validate", type=bool, default=True)
+    @click.option("--cache", type=bool, default=True)
+    def build(validate, cache):
+        open_spec.build(validate=validate, cache=cache)
+
+    open_spec.app.cli.add_command(oas_cli)
 
 
 class OpenSpec:
@@ -58,7 +78,7 @@ class OpenSpec:
             self.config: OasConfig = config_obj
         else:
             self.config: OasConfig = OasConfig(app)
-        __CliWrapper(self)
+        # __CliWrapper(self)
         self.__view_manager = __ViewManager(
             self,
             blueprint_name=blueprint_name,
@@ -68,6 +88,8 @@ class OpenSpec:
         )
         if self.config.validate_requests:
             self.__requests_validator = __RequestsValidator(self)
+        #
+        set_cli(self)
 
     def init(self, echo=True):
         self._app_paths = get_app_paths()
