@@ -42,42 +42,39 @@ class __RequestsValidator:
         self.row_oas = {}
         self.final_oas = {}
 
-    def get_row_oas(self):
+    def __get_row_oas(self):
         if self.row_oas:
             return self.row_oas
         else:
             self.row_oas = self.open_spec.row_data
         return self.row_oas
 
-    def get_final_oas(self):
+    def __get_final_oas(self):
         if self.final_oas:
             return self.final_oas
         else:
             self.final_oas = self.open_spec.final_oas
         return self.final_oas
 
-    def get_request_body_data(self):
+    def __get_request_body_data(self):
         mt = request.mimetype
-        body_data = None
+        body_data = {}
 
         if request.is_json:
             body_data = request.get_json()
         elif mt in [
             "application/x-www-form-urlencoded",
         ]:
-            body_data = request.form
+            body_data = request.form.to_dict()
         elif mt in ["multipart/form-data"]:
-            body_data = request.files
+            body_data = request.files.to_dict()
         else:
-            body_data = request.data
+            body_data = request.data or {}
         return body_data
 
     @lru_cache(maxsize=50)
-    def get_request_body_schema(self, mt: str, path: str, method: str):
-        row_oas = self.get_row_oas()
-        # mt = request.mimetype
-        # path = rule_to_path(request.url_rule)
-        # method = request.method
+    def __get_request_body_schema(self, mt: str, path: str, method: str):
+        row_oas = self.__get_row_oas()
         if method in ["get", "delete", "head"]:
             return None, False
         body = (
@@ -93,39 +90,42 @@ class __RequestsValidator:
         return schema, is_required
 
     def __validate_request_body(self, app: Flask):
+        if self.config.pre_validattion_handler:
+            try:
+                self.config.pre_validattion_handler()
+            except:
+                return
         try:
             body_data = None
             validation_errors = {}
-            schema, is_required = self.get_request_body_schema(
+            schema, is_required = self.__get_request_body_schema(
                 request.mimetype, rule_to_path(request.url_rule), request.method
             )
-            body_data = cast(dict, self.get_request_body_data())
-            self.set_g(body_data)
-
+            body_data = cast(dict, self.__get_request_body_data())
             if schema:
                 validation_errors = schema.validate(data=body_data)
-                if validation_errors and is_required:
-                    res = make_response(
-                        jsonify(validation_errors), HTTPStatus.BAD_REQUEST
-                    )
-                    abort(res)
-                schema = cast(Schema, schema)
-                body_data = cast(dict, body_data)
-                #
-                self.set_g(
-                    body_data,
-                    validation_errors,
-                    (lambda: "invalid" if validation_errors else None)(),
-                )
-            else:
-                self.set_g(body_data, validation_errors, "noschema")
+            self.__post_validation(
+                schema, is_required, body_data, validation_errors
+            )
         except Exception as e:
             warning(e)
+        if self.config.post_validattion_handler:
+            self.config.post_validattion_handler()
 
-    def set_g(self, data, validation_errors={}, error=None):
+    def __post_validation(
+        self, schema: Schema, is_required: bool, data: dict, errors
+    ):
+        if errors and is_required:
+            res = make_response(jsonify(errors), HTTPStatus.BAD_REQUEST)
+            abort(res)
+        #
         g.request_body_data = data
-        g.request_body_data_valid = validation_errors
-        g.request_body_data_error = error
+        g.request_body_data_valid = errors
+        g.request_body_data_error = ""
+        if not schema:
+            g.request_body_data_error = "noschema"
+        elif errors:
+            g.request_body_data_error = "invalid"
 
     def validate_x_schema(self, data, mt):
         x_schema = data.get("content", {}).get(mt, {}).get("x-schema")

@@ -13,6 +13,8 @@ class OasConfig:
     blueprint_url_prefix = "/spec"
     blueprint_name = "spec_bp"
     validate_requests = False
+    pre_validattion_handler = None
+
     __register_blueprint = True
     __register_json_route = True
     __register_ui_route = True
@@ -68,6 +70,13 @@ class OasConfig:
             )
             if self.validate_requests:
                 self.auto_build = True
+
+            self.pre_validattion_handler = current_app.config.get(
+                "OAS_PRE_VALIDATION_HANDLER", None
+            )
+            self.post_validattion_handler = current_app.config.get(
+                "OAS_POST_VALIDATION_HANDLER", None
+            )
 
             self.blueprint_url_prefix = current_app.config.get(
                 "OAS_BLUEPRINT_URL_PREFIX", self.blueprint_url_prefix
