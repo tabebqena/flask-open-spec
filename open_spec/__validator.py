@@ -2,6 +2,7 @@ from enum import Flag
 from functools import lru_cache
 from http import HTTPStatus
 from inspect import isclass
+from logging import warning
 from pprint import pprint, pp
 from typing import TYPE_CHECKING, Tuple, cast
 from urllib.parse import urlparse
@@ -92,31 +93,34 @@ class __RequestsValidator:
         return schema, is_required
 
     def __validate_request_body(self, app: Flask):
-        body_data = None
-        validation_errors = {}
-        schema, is_required = self.get_request_body_schema(
-            request.mimetype, rule_to_path(request.url_rule), request.method
-        )
-        body_data = cast(dict, self.get_request_body_data())
-        self.set_g(body_data)
-
-        if schema:
-            validation_errors = schema.validate(data=body_data)
-            if validation_errors and is_required:
-                res = make_response(
-                    jsonify(validation_errors), HTTPStatus.BAD_REQUEST
-                )
-                abort(res)
-            schema = cast(Schema, schema)
-            body_data = cast(dict, body_data)
-            #
-            self.set_g(
-                body_data,
-                validation_errors,
-                (lambda: "invalid" if validation_errors else None)(),
+        try:
+            body_data = None
+            validation_errors = {}
+            schema, is_required = self.get_request_body_schema(
+                request.mimetype, rule_to_path(request.url_rule), request.method
             )
-        else:
-            self.set_g(body_data, validation_errors, "noschema")
+            body_data = cast(dict, self.get_request_body_data())
+            self.set_g(body_data)
+
+            if schema:
+                validation_errors = schema.validate(data=body_data)
+                if validation_errors and is_required:
+                    res = make_response(
+                        jsonify(validation_errors), HTTPStatus.BAD_REQUEST
+                    )
+                    abort(res)
+                schema = cast(Schema, schema)
+                body_data = cast(dict, body_data)
+                #
+                self.set_g(
+                    body_data,
+                    validation_errors,
+                    (lambda: "invalid" if validation_errors else None)(),
+                )
+            else:
+                self.set_g(body_data, validation_errors, "noschema")
+        except Exception as e:
+            warning(e)
 
     def set_g(self, data, validation_errors={}, error=None):
         g.request_body_data = data
