@@ -13,6 +13,7 @@ class OasBuilder:
     """
 
     data: dict = {}
+    row_data: dict = {}
 
     def __init__(
         self,
@@ -382,6 +383,15 @@ class OasBuilder:
                 ]
             ),
         )
+        OasBuilder.row_data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {"components": {"schemas": {name: schema}}},
+                    OasBuilder.row_data,
+                ]
+            ),
+        )
         return name
 
     @staticmethod
@@ -440,6 +450,21 @@ class OasBuilder:
             ),
         )
 
+        OasBuilder.row_data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "responses": {response_name: response_data},
+                            "schemas": {schema_name: schema},
+                        },
+                    },
+                    OasBuilder.row_data,
+                ],
+            ),
+        )
+
     @staticmethod
     def component_request_body(
         schema: Any, content_type: str, request_body_name: str, **kwargs
@@ -487,6 +512,20 @@ class OasBuilder:
                 ]
             ),
         )
+        OasBuilder.row_data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "requestBodies": {request_body_name: body_data},
+                            "schemas": {schema_name: schema},
+                        },
+                    },
+                    OasBuilder.row_data,
+                ]
+            ),
+        )
         # self.data["paths"][path][mthd]["requestBody"] = request_body
 
     @staticmethod
@@ -526,6 +565,20 @@ class OasBuilder:
                         },
                     },
                     OasBuilder.data,
+                ]
+            ),
+        )
+        OasBuilder.row_data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "parameters": {parameter_name: param_data},
+                            #     "schemas": {schema_name: schema_data},
+                        },
+                    },
+                    OasBuilder.row_data,
                 ]
             ),
         )
@@ -586,6 +639,20 @@ class OasBuilder:
                         },
                     },
                     OasBuilder.data,
+                ]
+            ),
+        )
+        OasBuilder.row_data = cast(
+            dict,
+            merge_recursive(
+                [
+                    {
+                        "components": {
+                            "headers": {header_name: header_data},
+                            "schemas": {schema_name: schema},
+                        },
+                    },
+                    OasBuilder.row_data,
                 ]
             ),
         )
