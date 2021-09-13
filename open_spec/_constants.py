@@ -14,11 +14,11 @@ INFO_STUB = {
     "version": "1.0",
 }
 TAGS_STUB = []
-SERVERS_STUB = [{"url": None, "description": ""}]
+SERVERS_STUB = [{"url": "", "description": ""}]
 SECURITY_SCHEMAS_STUB = {}
 EXTERNALDOCS_STUB = {
-    "description": None,
-    "url": None,
+    "description": "",
+    "url": "",
 }
 #
 PATHS_ITEM_STUB_LONG = {

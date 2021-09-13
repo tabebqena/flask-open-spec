@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 from typing import Callable, cast
 
 import click
@@ -8,16 +7,21 @@ from flask.cli import AppGroup
 from openapi_spec_validator import validate_spec
 
 from .__loader import __load_data, _OpenSpec__load_data  # noqa
+from .__serializer import (
+    __ResponseSerializer,  # noqa
+    _OpenSpec__ResponseSerializer,
+)
 from .__spec_wrapper import _get_spec_dict
-from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
 from .__validator import (
-    __RequestsValidator,
+    __RequestsValidator,  # noqa
     _OpenSpec__RequestsValidator,
-)  # noqa
+)
+from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
 from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
 from ._utils import cache_file, clean_data, merge_recursive, yaml_dump
 from .oas_config import OasConfig
+from ._editor import make_template_data
 
 
 def set_cli(open_spec: "OpenSpec"):
@@ -44,15 +48,17 @@ class OpenSpec:
     def __init__(
         self,
         app: Flask = None,
+        oas_data: dict = {},
         blueprint_name: str = None,
         url_prefix: str = None,
         auto_build=None,
         authorization_handler: Callable = None,
+        config_data: dict = {},
         config_obj: OasConfig = None,
     ) -> None:
         self._app_paths = {}
-        self.row_data = {}
-        self.final_oas = {}
+        self.input_oas_data = oas_data
+        self.oas_data = {}
 
         if app:
             self.init_app(
@@ -61,7 +67,8 @@ class OpenSpec:
                 url_prefix,
                 auto_build,
                 authorization_handler,
-                config_obj,
+                config_data,
+                config_obj=config_obj,
             )
 
     def init_app(
@@ -71,33 +78,35 @@ class OpenSpec:
         url_prefix: str = None,
         auto_build=None,
         authorization_handler: Callable = None,
+        config_data: dict = {},
         config_obj: OasConfig = None,
     ):
         self.app = app
         if config_obj:
             self.config: OasConfig = config_obj
         else:
-            self.config: OasConfig = OasConfig(app)
-        # __CliWrapper(self)
+            self.config: OasConfig = OasConfig(app, config_data)
+        #
         self.__view_manager = __ViewManager(
             self,
             blueprint_name=blueprint_name,
             url_prefix=url_prefix,
-            auto_build=auto_build,
+            auto_build=True,  # auto_build, # should be always True
             authorization_handler=authorization_handler,
         )
         if self.config.validate_requests:
-            self.__requests_validator = __RequestsValidator(self)
+            __RequestsValidator(self)
+        if self.config.serialize_response:
+            __ResponseSerializer(self)
         #
         set_cli(self)
-
-    def init(self, echo=True):
-        self._app_paths = get_app_paths()
-        self.__editor = TemplatesEditor(self, echo)
-        # self.__editor.init(echo)
+        self.app.extensions["open_spec"] = self
 
     def build(self, validate=None, cache=None):
-        self.init(echo=False)
+        self._app_paths = get_app_paths()
+        template_data = make_template_data(self.config, self._app_paths)
+        self._editor = TemplatesEditor(self, template_data, False)
+
         if validate is None:
             validate = self.config.validate_on_build
         cached_final = None
@@ -105,29 +114,22 @@ class OpenSpec:
             cache = self.config.cache_on_build
             if cache:
                 cached_final = cache_file(
-                    self.config.final_file,
-                    self.config.oas_dir,
-                    self.config.cache_dir,
+                    self.config.final_file_path,
+                    self.config.oas_dir_path,
+                    self.config.cache_dir_path,
                 )
-        self.row_data = __load_data(self.config, self.__editor)
-        # pprint(self.row_data)
-        spec_data = _get_spec_dict(cast(dict, self.row_data), self.config)
-        data = clean_data(
-            merge_recursive(
-                [
-                    spec_data,
-                    self.row_data,
-                ]
-            )
+
+        data = __load_data(
+            self, self._editor.template_data, self.input_oas_data
         )
         if cached_final and not cache:
             os.remove(cached_final)
         if validate:
             validate_spec(data)
-        yaml_dump("", data, file=self.config.final_file)
-        self.final_oas = data
+        yaml_dump("", data, file=self.config.final_file_path)
+        self.oas_data = data
         if self.config.debug:
-            click.echo(self.config.final_file)
+            click.echo(self.config.final_file_path)
 
     def get_spec_dict(self):
         return self.__view_manager.get_spec_dict()

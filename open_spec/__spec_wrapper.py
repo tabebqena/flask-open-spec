@@ -3,6 +3,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from ._parameters import get_app_paths
 from ._utils import clean_parameters_list, remove_none
 from ._constants import RESPONSE_STUB_LONG
+from .plugin import SchemaQualPlugin
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -63,7 +64,10 @@ def _get_spec_dict(
         version=data.get("info", {}).get("version", config.version),
         openapi_version="3.0.2",
         info=data.get("info", {}),
-        plugins=[MarshmallowPlugin()],
+        plugins=[
+            SchemaQualPlugin(),
+            MarshmallowPlugin(),
+        ],
     )
 
     _add_paths_to_spec(spec, data)

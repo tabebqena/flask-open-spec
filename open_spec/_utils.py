@@ -1,8 +1,7 @@
-from inspect import getmodule, isclass, isfunction
+from copy import deepcopy
 import os
-from typing import Dict, List, cast
+from typing import Dict, List
 import functools
-import marshmallow
 import yaml
 from apispec.yaml_utils import dict_to_yaml
 import ntpath
@@ -102,7 +101,9 @@ def clean_parameters_list(params: List[Dict]) -> List[Dict]:
     :type params: List[Dict]
     """
     res: List[Dict] = []
-    for param in params:
+    _params = deepcopy(params)
+    _params.reverse()
+    for param in _params:
         name = param.get("name")
         location = param.get("in")
         prev = [
@@ -110,6 +111,7 @@ def clean_parameters_list(params: List[Dict]) -> List[Dict]:
         ]
         if len(prev) == 0:
             res.append(param)
+    res.reverse()
     return res
 
 
@@ -152,95 +154,3 @@ def cache_file(path, oas_dir, cache_dir):
 
         f.write(open(path).read())
     return new_path
-
-
-def get_schema_info(schema, **kwargs):
-    # depercated as there is many synamiic features  of schema
-    # https://marshmallow.readthedocs.io/en/stable/custom_fields.html
-
-    """resolve class name, module and properties of passed schema"""
-    qualname = None
-    module = None
-    info = {}
-    """
-    is_klass: 
-    True in calss GistSchema(schema.Schema)
-    False in GistSchema(any args)
-    False in schema=GistSchema(anyargs)
-    True in schema.Schema.from_dict(dict here)
-    Fals e in function returning class ex:. get_class without()
-    """
-    is_klass = isclass(schema)  # True in class schema,
-    """
-    is_sub_klass: 
-    True calss GistSchema(schema.Schema)
-    False in GistSchema(any args)
-    False in schema=GistSchema(anyargs)
-    True in schema.Schema.from_dict(dict here)
-    Fals e in function returning class ex:. get_class without()
-
-    """
-    is_sub_klass = False
-    if is_klass:
-        is_sub_klass = issubclass(
-            schema, marshmallow.Schema
-        )  # True in class Schema,
-    """
-    is_function: 
-    False in calss GistSchema(schema.Schema)
-    False in GistSchema(any args)
-    False in schema=GistSchema(anyargs)
-    False in schema.Schema.from_dict(dict here)
-
-    True in function returning class ex:. get_class without()
-
-    """
-    is_function = isfunction(schema)  # False in class Schema
-    """
-    is_instance: 
-    False in calss GistSchema(schema.Schema)
-    True in GistSchema(any args)
-    True in schema=GistSchema(anyargs)
-    False in schema.Schema.from_dict(dict here)
-    False in function returning class ex:. get_class without()
-
-    """
-    is_instance = isinstance(
-        schema, marshmallow.Schema
-    )  # TRue in schema class call  False in class schema
-    print("is_klass: ", is_klass)
-    print("is_sub_klass: ", is_sub_klass)
-    print("is_function: ", is_function)
-    print("is_instance: ", is_instance)
-    if is_sub_klass:
-        qualname = getattr(schema, "__module__", None)
-        module = getmodule(schema)
-        file_ = getattr(module, "__file__", None)
-
-        name = getattr(schema, "__name__", None)
-        # print(getmodule(schema).__)
-        return {"name": name, "qualname": qualname, "file": file_, "kwargs": {}}
-    elif is_instance:
-        schema = cast(marshmallow.Schema, schema)
-        klass = schema.__class__
-        info = get_schema_info(klass)
-        info["kwargs"].update(
-            {
-                "dump_only": schema.dump_only,
-                "exclude": schema.exclude,
-                "load_only": schema.load_only,
-                "many": schema.many,
-                "only": schema.only,
-                "ordered": schema.ordered,
-                "partial": schema.partial,
-                "unknown": schema.unknown,
-            }
-        )
-        return info
-    elif is_function:
-        qualname = getattr(schema, "__module__", None)
-        module = getmodule(schema)
-        file_ = getattr(module, "__file__", None)
-
-        name = getattr(schema, "__name__", None)
-        return {"name": name, "qualname": qualname, "file": file_, "kwargs": {}}

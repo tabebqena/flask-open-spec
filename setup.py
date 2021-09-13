@@ -10,6 +10,7 @@ requirements = [
     "marshmallow",
     "PyYAML",
     "openapi-spec-validator",
+    "deepdiff",
 ]
 
 

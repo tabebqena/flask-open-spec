@@ -1,28 +1,71 @@
 from copy import deepcopy
-from typing import Dict, TYPE_CHECKING
+import os
+import pprint
+from .builder import OasBuilder
+from .decorators import Deferred
+from typing import Any, Dict, TYPE_CHECKING, cast
 
 from ._parameters import get_app_paths
 from ._utils import load_file, merge_recursive
-from .builder import OasBuilder
 
 if TYPE_CHECKING:
-    from ._editor import TemplatesEditor
     from .oas_config import OasConfig
+    from .open_spec import OpenSpec
 
 
-def __load_data(config: "OasConfig", editor: "TemplatesEditor"):
-    sections_data = load_file(config.oas_sections_file)
-    overrides = load_file(config.override_file)
-    snippet_files_data = editor.load_snippet_files()
+def __load_overrides(open_spec: "OpenSpec") -> dict:
+    data = {}
+    dir = open_spec.config.overrides_dir_path
+    if not os.path.exists(dir):
+        return data
+    files = os.listdir(dir)
+    files.sort()
+    for f in files:
+        p = os.path.join(dir, f)
+        with open(p, "r") as f:
+            data = cast(dict, merge_recursive([load_file(f), data]))
+
+    return data
+
+
+def __load_data(
+    open_spec: "OpenSpec",
+    templates_data: Dict[str, Any],
+    input_oas_data: dict = {},
+):
+    config = open_spec.config
+    # editor = open_spec._editor
+
+    # sections_data = load_file(config.sections_file)
+    # components_data = load_file(config.components_file)
+    overrides = __load_overrides(open_spec)
+    # snippet_files_data = editor.load_snippet_files()
     #
-    builder_data = OasBuilder.data
+    data = cast(
+        dict,
+        merge_recursive(
+            [
+                input_oas_data,
+                templates_data,
+                # sections_data,
+                # components_data,
+                # snippet_files_data,
+                overrides,
+            ]
+        ),
+    )  # type: ignore
+    builder = OasBuilder(
+        data,
+        allowed_methods=config.allowed_methods,
+    )
+    builder_data = builder.get_data()
     builder_data = _parse_star_method(config, builder_data)
     data = merge_recursive(
         [
             overrides,
             builder_data,
-            snippet_files_data,
-            sections_data,
+            # snippet_files_data,
+            # sections_data,
         ]
     )
     data = _clean_invalid_paths(data)

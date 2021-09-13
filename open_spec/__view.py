@@ -28,15 +28,15 @@ class __ViewManager:
         self.__url_prefix = url_prefix or self.config.blueprint_url_prefix
 
         self.__register_callback()
-        self.register_spec_blueprint()
+        self.__register_spec_blueprint()
         self.__built = True
 
     def __auto_build(self):
         try:
             cached_final = cache_file(
-                self.config.final_file,
-                self.config.oas_dir,
-                self.config.cache_dir,
+                self.config.final_file_path,
+                self.config.oas_dir_path,
+                self.config.cache_dir_path,
             )
 
             self.open_spec.build()
@@ -55,7 +55,7 @@ class __ViewManager:
         if auto_build:
             self.app.before_first_request(self.__auto_build)
 
-    def register_spec_blueprint(self):
+    def __register_spec_blueprint(self):
         if not self.config.register_blueprint:
             return
         self.blueprint = Blueprint(
@@ -97,7 +97,7 @@ class __ViewManager:
             self.open_spec.build()
             self.__built = True
 
-        return load_file(self.config.final_file)
+        return load_file(self.config.final_file_path)
 
     def get_spec_json(self):
         if self.__authorization_handler:

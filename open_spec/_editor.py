@@ -1,6 +1,5 @@
 from copy import deepcopy
-from distutils.command.config import config
-from pprint import pprint
+from .oas_config import OasConfig
 import click
 from flask import current_app
 from ._parameters import (
@@ -8,8 +7,7 @@ from ._parameters import (
     preserve_user_edits,
 )
 import os
-from typing import List, cast
-from werkzeug.routing import Rule
+from typing import Dict, List, cast
 from ._parameters import rule_to_path
 from ._constants import (
     EXTERNALDOCS_STUB,
@@ -26,6 +24,7 @@ from ._constants import (
     OPERATION_STUB_LONG,
     OPERATION_STUB_SHORT,
 )
+from werkzeug.routing import Rule
 from ._utils import (
     load_file,
     merge_recursive,
@@ -36,30 +35,97 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .open_spec import OpenSpec
 
+
 #
+
+
+def make_template_data(config: "OasConfig", app_paths: Dict[str, List[str]]):
+    INFO_STUB["title"] = config.title
+    INFO_STUB["version"] = config.version
+    data = {
+        "openapi": "3.0.2",
+        "info": INFO_STUB,
+        "servers": SERVERS_STUB,
+        "tags": TAGS_STUB,
+        "components": {"securitySchemes": SECURITY_SCHEMAS_STUB},
+        "externalDocs": EXTERNALDOCS_STUB,
+    }
+    #
+    paths_details = {}
+    #
+    path_stub = (
+        lambda: PATHS_ITEM_STUB_LONG
+        if config.use_long_stubs
+        else PATHS_ITEM_STUB_SHORT
+    )()
+    operation_stub = (
+        lambda: OPERATION_STUB_LONG
+        if config.use_long_stubs
+        else OPERATION_STUB_SHORT
+    )()
+    request_stub = (
+        lambda: REQUEST_STUB_LONG
+        if config.use_long_stubs
+        else REQUEST_STUB_SHORT
+    )()
+
+    response_stub = (
+        lambda: RESPONSE_STUB_LONG
+        if config.use_long_stubs
+        else RESPONSE_STUB_SHORT
+    )()
+    #
+    for path in app_paths:
+        path_data = cast(dict, deepcopy(path_stub))
+        methods = app_paths[path]
+        for method in methods:
+            if method.lower() not in config.allowed_methods:
+                continue
+            path_data[method] = deepcopy(operation_stub)
+            if method not in ["get", "delete", "head"]:
+                path_data[method]["requestBody"] = deepcopy(request_stub)
+            path_data[method]["responses"] = deepcopy(response_stub)
+        paths_details[path] = path_data
+    #
+    parameters: dict = extract_path_parameters(
+        allowed_methods=config.allowed_methods,
+        long_stub=config.use_long_stubs,
+    )
+    #
+    template_data = cast(
+        dict, merge_recursive([{"paths": paths_details}, parameters, data])
+    )
+    return template_data
+    # yaml_dump("", template_data, "res.yaml")
+
+
 #
 class TemplatesEditor:
-    def __init__(self, open_spec: "OpenSpec", echo=False) -> None:
+    def __init__(
+        self, open_spec: "OpenSpec", template_data: Dict, echo=False
+    ) -> None:
         self.open_spec = open_spec
         self.config = open_spec.config
         self.app_paths = self.open_spec._app_paths
-        self.init(echo)
-        self.template_data: dict = {}
-
-    def init(self, echo=True):
-        self.make_template_data()
-        self.mk_dirs_files()
-        self._update_all()
+        self.template_data: dict = template_data
+        self.__mk_dirs_files()
+        self.__update_all()
         self.echo(echo)
 
-    def mk_dirs_files(self):
+    def __update_all(self):
+        self.__sync_sections_file()
+        self.__sync_paths_details_file()
+        self.__sync_components_file()
+
+    def __mk_dirs_files(self):
         try:
-            os.makedirs(self.config.oas_dir)
+            os.makedirs(self.config.oas_dir_path)
         except:
             pass
         try:
-            os.makedirs(self.config.fragments_dir)
-            os.makedirs(self.config.paths_details_dir)
+            os.makedirs(self.config.fragments_dir_path)
+            os.makedirs(self.config.paths_dir_path)
+            os.makedirs(self.config.overrides_dir_path)
         except Exception as e:
             pass
         if self.config.save_sections_files:
@@ -67,8 +133,8 @@ class TemplatesEditor:
                 if not os.path.exists(f):
                     open(f, "w").close()
         else:
-            if not os.path.exists(self.config.override_file):
-                open(self.config.override_file, "w").close()
+            if not os.path.exists(self.config.overrides_dir_path):
+                open(self.config.overrides_dir_path, "w").close()
 
     def echo(self, echo=True):
         if not echo and self.config.debug:
@@ -76,109 +142,61 @@ class TemplatesEditor:
         if self.config.save_sections_files:
             click.echo(
                 "Now, It is your time to edit the generated files:\
-                        \n - {0}\n - {1}\n - {2}\n - {3}\n - {4}\n ".format(
-                    self.config.oas_sections_file,
+                        \n - {0}\n - {1}\n ".format(  # - {2}\n - {3}\n - {4}\n
+                    self.config.sections_file_path,
                     # self.config.request_body_file,
                     # self.config.responses_file,
-                    self.config.override_file,
+                    self.config.overrides_dir_path,
                 )
             )
         else:
             click.echo(
                 "- generated files:\
                         \n - {0}\n - {1}\n ".format(
-                    self.config.oas_sections_file,
-                    self.config.override_file,
+                    self.config.sections_file_path,
+                    self.config.overrides_dir_path,
                 )
             )
 
-    def make_template_data(self):
-        INFO_STUB["title"] = self.config.title
-        INFO_STUB["version"] = self.config.version
-        data = {
-            "openapi": "3.0.2",
-            "info": INFO_STUB,
-            "servers": SERVERS_STUB,
-            "tags": TAGS_STUB,
-            "components": {"securitySchemes": SECURITY_SCHEMAS_STUB},
-            "externalDocs": EXTERNALDOCS_STUB,
-        }
-        #
-        paths_details = {}
-        #
-        path_stub = (
-            lambda: PATHS_ITEM_STUB_LONG
-            if self.config.use_long_stubs
-            else PATHS_ITEM_STUB_SHORT
-        )()
-        operation_stub = (
-            lambda: OPERATION_STUB_LONG
-            if self.config.use_long_stubs
-            else OPERATION_STUB_SHORT
-        )()
-        request_stub = (
-            lambda: REQUEST_STUB_LONG
-            if self.config.use_long_stubs
-            else REQUEST_STUB_SHORT
-        )()
-
-        response_stub = (
-            lambda: RESPONSE_STUB_LONG
-            if self.config.use_long_stubs
-            else RESPONSE_STUB_SHORT
-        )()
-        #
-        for path in self.app_paths:
-            path_data = cast(dict, deepcopy(path_stub))
-            methods = self.app_paths[path]
-            for method in methods:
-                if method.lower() not in self.config.allowed_methods:
-                    continue
-                path_data[method] = deepcopy(operation_stub)
-                if method not in ["get", "delete", "head"]:
-                    path_data[method]["requestBody"] = deepcopy(request_stub)
-                path_data[method]["responses"] = deepcopy(response_stub)
-            paths_details[path] = path_data
-        #
-        parameters: dict = extract_path_parameters(
-            allowed_methods=self.config.allowed_methods,
-            long_stub=self.config.use_long_stubs,
-        )
-        #
-        self.template_data = cast(
-            dict, merge_recursive([{"paths": paths_details}, parameters, data])
-        )
-        yaml_dump("", self.template_data, "res.yaml")
-
-    def _update_all(self):
-        self.update_sections_file()
-        self.__update_paths_details_file()
-        # self.__update_path_parameters()
-
-    def update_sections_file(self):
+    def __sync_sections_file(self):
         data = cast(dict, deepcopy(self.template_data))
-        data["paths"] = None
-        del data["paths"]
+        data = {
+            k: v
+            for k, v in data.items()
+            if k in ["openapi", "tags", "externalDocs", "servers", "info"]
+        }
+        prev = load_file(self.config.sections_file_path, {})
+        data = merge_recursive([prev, data])
+        if self.config.save_sections_files:
+            yaml_dump("", data, self.config.sections_file_path)
+        self.template_data = cast(
+            dict, merge_recursive([data, self.template_data])
+        )
 
-        if os.path.exists(self.config.oas_sections_file):
-            prev = load_file(self.config.oas_sections_file, None)
-            if prev:
-                data = merge_recursive([prev, data])
-        yaml_dump("", data, self.config.oas_sections_file)
+    def __sync_components_file(self):
+        data = cast(dict, deepcopy(self.template_data))
 
-    def __update_paths_details_file(self):
+        prev = load_file(
+            self.config.components_file_path,
+            {},
+        )
+        data = cast(dict, merge_recursive([prev, data]))
+        yaml_dump(
+            "",
+            {"components": data.get("components", {})},
+            self.config.sections_file_path,
+        )
+        self.template_data = cast(
+            dict, merge_recursive([data, self.template_data])
+        )
+
+    def __sync_paths_details_file(self):
         rules = current_app.url_map._rules
         for rule in rules:
             path = rule_to_path(rule)
-            file_path = None
-            if self.config.spec_files_locator:
-                file_path = self.__call_spec_files_locator_func(
-                    rule=rule, path=path
-                )
-            if not file_path:
-                path_ = path.replace("/", ".") + ".yaml"
-                file_path = os.path.join(self.config.paths_details_dir, path_)
-            prev = load_file(file_path)
+
+            file_path = self.__locate_oas_file(rule)
+            prev = load_file(file_path, {})
             user_edited_parameters = preserve_user_edits(
                 {
                     "paths": {
@@ -207,25 +225,36 @@ class TemplatesEditor:
                 pass
 
             yaml_dump("", path_data, file_path)
+            self.template_data = cast(
+                dict,
+                merge_recursive(
+                    [
+                        {
+                            "paths": {
+                                path: path_data,
+                            }
+                        },
+                        self.template_data,
+                    ]
+                ),
+            )
 
-    def __call_spec_files_locator_func(self, **kwargs) -> str:
-        if not self.config.spec_files_locator:
-            return ""
-        return self.config.spec_files_locator(**kwargs)
+    def __locate_oas_file(self, rule: Rule) -> str:
+        path = rule_to_path(rule)
+        file_path = None
+        if self.config.spec_files_locator:
+            file_path = self.config.spec_files_locator(rule=rule, path=path)
+
+        if not file_path:
+            path_ = path.replace("/", ".") + ".yaml"
+            file_path = os.path.join(self.config.paths_dir_path, path_)
+        return file_path
 
     def load_snippet_files(self):
         data = {}
         rules = current_app.url_map._rules
         for rule in rules:
-            path = rule_to_path(rule)
-            file_path = None
-            if self.config.spec_files_locator:
-                file_path = self.__call_spec_files_locator_func(
-                    rule=rule, path=path
-                )
-            if not file_path:
-                path_ = path.replace("/", ".") + ".yaml"
-                file_path = os.path.join(self.config.paths_details_dir, path_)
-            file_data = load_file(file_path, {})
-            data = merge_recursive([data, file_data])
+            data = merge_recursive(
+                [data, load_file(self.__locate_oas_file(rule), {})]
+            )
         return data
