@@ -96,7 +96,6 @@ def make_template_data(config: "OasConfig", app_paths: Dict[str, List[str]]):
         dict, merge_recursive([{"paths": paths_details}, parameters, data])
     )
     return template_data
-    # yaml_dump("", template_data, "res.yaml")
 
 
 #
