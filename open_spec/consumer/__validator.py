@@ -2,7 +2,7 @@ from functools import lru_cache
 from http import HTTPStatus
 from inspect import isclass
 from logging import warning
-from .plugin.utils import import_by_path, resolve_schema_instance
+from ..plugin.utils import import_by_path, resolve_schema_instance
 from typing import TYPE_CHECKING, Optional, cast
 from flask import Flask, Response, abort, g, jsonify, make_response
 
@@ -10,9 +10,9 @@ from flask import request_started, request
 from marshmallow import Schema
 
 if TYPE_CHECKING:
-    from .open_spec import OpenSpec
+    from ..open_spec import OpenSpec
 
-from ._parameters import rule_to_path
+from .._parameters import rule_to_path
 
 
 def resolve_schema(oas: dict, schema: dict):

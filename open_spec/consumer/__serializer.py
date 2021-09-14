@@ -1,17 +1,19 @@
+from copy import deepcopy
 from functools import lru_cache, wraps
 from http import HTTPStatus
 from http.client import responses
+from logging import warning
 
 from marshmallow import Schema
-from .plugin.utils import import_by_path
+from ..plugin.utils import import_by_path, resolve_schema_instance
 from typing import Union, Any, TYPE_CHECKING, cast
 from flask import request
 
 
 if TYPE_CHECKING:
-    from .open_spec import OpenSpec
+    from ..open_spec import OpenSpec
 
-from ._parameters import rule_to_path
+from .._parameters import rule_to_path
 
 from werkzeug.datastructures import Headers
 from werkzeug.wrappers import Response as BaseResponse
@@ -79,12 +81,19 @@ class __ResponseSerializer:
         self.final_oas = {}
 
     def wrap_all_functions(self):
-        for endpoint, func in self.app.view_functions.items():
+        old_view_functions = {}
+        for e, v in self.app.view_functions.items():
+            old_view_functions[e] = v
+        for endpoint in self.app.view_functions.keys():
+            func = old_view_functions[request.endpoint]
 
             @wraps(func)
             def wrapped(*args, **kwargs):
                 func_res = func(*args, **kwargs)
-                return self.__serialize_response(func_res)
+                try:
+                    return self.__serialize_response(func_res)
+                except Exception as e:
+                    warning(e)
 
             self.app.view_functions[endpoint] = wrapped
 
@@ -103,7 +112,6 @@ class __ResponseSerializer:
         accepts: str = "",
     ):
         row_oas = self.__get_oas_data()
-
         responses = (
             row_oas.get("paths", {})
             .get(rule_to_path(request.url_rule), {})
@@ -112,7 +120,7 @@ class __ResponseSerializer:
         )
         response_object = responses.get(int(status), None)
         if not response_object:
-            response_object = responses.get(str(status), None)
+            response_object = responses.get(str(int(status)), None)
         # getrange response 2XX 3XX 4XX 5XX
         if not response_object:
             codexx = str(status)[0] + "XX"
@@ -208,10 +216,11 @@ class __ResponseSerializer:
                 for a in request.headers.get("Accept", "").split(",")
             ]
         )
-
-        schema = self.__get_response_schema(status, mimetype, accepts)
-
-        return import_by_path(schema).dump(rv)
+        xschema = self.__get_response_schema(status, mimetype, accepts)
+        if xschema:
+            instance = resolve_schema_instance(xschema)
+            if instance:
+                return instance.dump(rv), status, headers
 
         return rv, status, headers
 

@@ -7,19 +7,18 @@ from flask.cli import AppGroup
 from openapi_spec_validator import validate_spec
 
 from .__loader import __load_data, _OpenSpec__load_data  # noqa
-from .__serializer import (
+from .consumer.__serializer import (
     __ResponseSerializer,  # noqa
     _OpenSpec__ResponseSerializer,
 )
-from .__spec_wrapper import _get_spec_dict
-from .__validator import (
+from .consumer.__validator import (
     __RequestsValidator,  # noqa
     _OpenSpec__RequestsValidator,
 )
 from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
 from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
-from ._utils import cache_file, clean_data, merge_recursive, yaml_dump
+from ._utils import cache_file, yaml_dump
 from .oas_config import OasConfig
 from ._editor import make_template_data
 
