@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, List, Literal, Optional, Union, cast
+from typing import Any, Literal, Optional, Union, cast
 
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -7,7 +7,6 @@ from marshmallow import Schema
 
 from .._parameters import VALID_METHODS_OPENAPI_V3
 from .._utils import clean_parameters_list, merge_recursive
-from ..plugin import get_schema_info
 from ..plugin.plugin import SchemaQualPlugin
 from ..decorators import Deferred
 from .builder_resolver import (

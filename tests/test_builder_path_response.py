@@ -1,12 +1,10 @@
-from pprint import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
-    ErrorSchema,
     GistSchema,
-    gistObj1,
+    gistObj1
 )
-from ..open_spec.decorators import Deferred, path_request_body, path_response
+from ..open_spec.decorators import Deferred, path_response
 
 
 class TestPathResponse(TestCase):
@@ -110,7 +108,14 @@ class TestPathResponse(TestCase):
         }
 
         builder = OasBuilder(data)
-        pprint(builder.get_data())
+        self.assertEqual(
+            builder.get_data()
+            .get("paths", {})
+            .get("/gists", {})
+            .get("responses", {}),
+            data.get("paths", {}).get("/gists", {}).get("responses", {}),
+        )
+        # pprint(builder.get_data())
         # self.run_tests(builder)
 
     def test_data2(self):

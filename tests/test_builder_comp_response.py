@@ -1,5 +1,3 @@
-from inspect import getmodule
-import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
@@ -100,8 +98,11 @@ class TestComponentResponse(TestCase):
         }
 
         builder = OasBuilder(data)
-        pprint.pprint(builder.get_data())
-        #self.run_tests(builder)
+        self.assertEqual(
+            builder.get_data().get("components"), data.get("components")
+        )
+        # pprint.pprint(builder.get_data())
+        # self.run_tests(builder)
 
     def test_decorator(self):
         component_response("ok_response", "application/json", gistObj1)

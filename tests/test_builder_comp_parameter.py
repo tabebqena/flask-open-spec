@@ -1,11 +1,7 @@
-import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
-    ErrorSchema,
-    GistSchema,
-    gistObj1,
-    PaginationSchema,
+    PaginationSchema
 )
 from ..open_spec.decorators import component_parameter, Deferred
 
@@ -35,6 +31,7 @@ class TestComponentParameter(TestCase):
                         "in": "query",
                         "name": "offsetParam",
                         "required": False,
+                        "description": "",
                     },
                     "limitParam": {
                         "schema": {
@@ -43,13 +40,19 @@ class TestComponentParameter(TestCase):
                         "in": "query",
                         "name": "limitParam",
                         "required": False,
+                        "description": "",
                     },
                 },
             }
         }
-
         builder = OasBuilder(data)
-        pprint.pprint(builder.get_data())
+
+        self.assertEqual(
+            builder.get_data().get("components").get("parameters"),
+            data.get("components").get("parameters"),
+        )
+
+        # pprint.pprint(builder.get_data())
         # self.run_tests(builder)
 
     def test_data(self):

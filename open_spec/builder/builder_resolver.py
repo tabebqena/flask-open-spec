@@ -1,8 +1,6 @@
 from copy import deepcopy
-from pprint import pprint
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
-from isort import api
 
 from .._parameters import VALID_METHODS_OPENAPI_V3
 from ..plugin.plugin import SchemaQualPlugin
@@ -245,8 +243,6 @@ class ComponentResolver:
             parameter_data, schemas = self._component_parameter(
                 parameters[param_name]
             )
-            print(parameter_data)
-            print(schemas)
             self.main_apispec.components.parameter(
                 param_name, parameter_data.get("in", "path"), parameter_data
             )
@@ -275,7 +271,6 @@ class ComponentResolver:
         _validate(None, None, schema, self.allowed_methods)
 
         schema_name, schema_data = self._component_schema(schema, kwargs)
-        print(272, schema_name, schema_data)
         if schema_name:
             schema_name = _add_schema_to_components(
                 self.main_apispec, schema_name, schema_data

@@ -1,10 +1,7 @@
-from pprint import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
-    ErrorSchema,
-    GistSchema,
-    gistObj1,
+    GistSchema
 )
 from ..open_spec.decorators import Deferred, component_request_body
 
@@ -69,7 +66,10 @@ class TestComponentRequestBodies(TestCase):
         }
 
         builder = OasBuilder(data)
-        pprint(builder.get_data())
+        self.assertEqual(
+            builder.get_data().get("components", {}).get("requestBodies", {}),
+            data.get("components", {}).get("requestBodies", {}),
+        )
         # self.run_tests(builder)
 
     def test_data_none_schema(self):
@@ -86,7 +86,16 @@ class TestComponentRequestBodies(TestCase):
         }
 
         builder = OasBuilder(data)
-        pprint(builder.get_data())
+        self.assertEqual(
+            builder.get_data().get("components", {}).get("requestBodies", {}),
+            {
+                "GistBody2": {
+                    "description": "A JSON object containing gist information",
+                    "required": True,
+                    "content": {"application/json": {"schema": {}}},
+                }
+            },
+        )
         # self.run_tests(builder)
 
     def test_decorator(self):

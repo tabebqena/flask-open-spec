@@ -1,11 +1,7 @@
-from inspect import getmodule
-import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
-    ErrorSchema,
-    GistSchema,
-    gistObj1,
+    gistObj1
 )
 from ..open_spec.decorators import Deferred, component_header
 
@@ -62,7 +58,11 @@ class TestComponentHeader(TestCase):
         }
 
         builder = OasBuilder(data)
-        pprint.pprint(builder.get_data())
+        # pprint.pprint(builder.get_data())
+        self.assertEqual(
+            builder.get_data().get("components", {}).get("headers", {}),
+            data.get("components", {}).get("headers", {}),
+        )
         # self.run_tests(builder)
 
     def test_decorator(self):

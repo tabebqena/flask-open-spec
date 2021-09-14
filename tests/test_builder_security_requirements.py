@@ -1,15 +1,9 @@
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    ErrorSchema,
-    GistSchema,
-    gistObj1,
-)
 from ..open_spec.decorators import (
     Deferred,
-    component_header,
     path_security_requirements,
-    security_requirements,
+    security_requirements
 )
 
 

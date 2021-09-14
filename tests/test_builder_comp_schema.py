@@ -1,4 +1,3 @@
-from pprint import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from .schemas.schemas import GistSchema, gistObj1, get_schema
@@ -15,7 +14,10 @@ class TestSchemaDict(TestCase):
             },
         }
         builder = OasBuilder(data)
-        pprint(builder.get_data())
+        self.assertEqual(
+            data.get("components", {}).get("schemas", {}),
+            builder.get_data().get("components", {}).get("schemas", {}),
+        )
 
 
 class TestSchemaKlass(TestCase):

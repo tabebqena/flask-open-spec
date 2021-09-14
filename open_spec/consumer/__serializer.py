@@ -1,11 +1,10 @@
-from copy import deepcopy
 from functools import lru_cache, wraps
 from http import HTTPStatus
 from http.client import responses
 from logging import warning
 
 from marshmallow import Schema
-from ..plugin.utils import import_by_path, resolve_schema_instance
+from ..plugin.utils import resolve_schema_instance
 from typing import Union, Any, TYPE_CHECKING, cast
 from flask import request
 

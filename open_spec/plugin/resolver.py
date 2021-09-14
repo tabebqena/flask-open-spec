@@ -1,4 +1,3 @@
-from http.client import responses
 from .utils import get_schema_info
 
 

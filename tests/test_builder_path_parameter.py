@@ -1,13 +1,9 @@
-from pprint import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
-    ErrorSchema,
-    GistSchema,
-    PaginationSchema,
-    gistObj1,
+    PaginationSchema
 )
-from ..open_spec.decorators import Deferred, path_parameter, path_request_body
+from ..open_spec.decorators import Deferred, path_parameter
 
 
 class TestPathParameter(TestCase):
@@ -82,8 +78,21 @@ class TestPathParameter(TestCase):
         }
 
         builder = OasBuilder(data)
-        pprint(builder.get_data())
+        # pprint(builder.get_data())
         # self.run_tests(builder)
+        parameters = (
+            builder.get_data()
+            .get("paths", {})
+            .get("/gists", {})
+            # .get("get", {})
+            .get("parameters", [])
+        )
+        self.assertEqual(
+            parameters,
+            data.get("paths", {}).get("/gists", {})
+            # .get("get", {})
+            .get("parameters", []),
+        )
 
     def test_decorator(self):
         path_parameter(
@@ -102,7 +111,7 @@ class TestPathParameter(TestCase):
         )
 
         builder = OasBuilder()
-        pprint(builder.get_data())
+        # pprint(builder.get_data())
         self.run_tests(builder)
 
     def tearDown(self) -> None:

@@ -1,5 +1,4 @@
 from unittest import TestCase
-from ..open_spec.open_spec import OpenSpec
 from ..open_spec.plugin import utils
 from .schemas.schemas import GistSchema, gistObj1, get_schema
 

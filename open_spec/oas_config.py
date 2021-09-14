@@ -1,4 +1,3 @@
-from logging import config
 import os
 from typing import Callable, List
 from flask import Flask, current_app

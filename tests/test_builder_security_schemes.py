@@ -1,5 +1,4 @@
 from ..open_spec.builder.builder import OasBuilder
-import pytest
 from unittest import TestCase
 from ..open_spec.decorators import (
     Deferred,

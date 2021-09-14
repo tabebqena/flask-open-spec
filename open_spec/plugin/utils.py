@@ -1,10 +1,6 @@
-from copy import deepcopy
 import importlib
 from inspect import getmodule, isclass, isfunction
-from pprint import pprint
-import sys
 from typing import Callable, cast
-import typing
 import marshmallow
 from marshmallow import class_registry
 
@@ -123,7 +119,6 @@ def get_schema_info(schema, **kwargs) -> dict:
                 qualname = getattr(schema, "__module__", "") + "." + name
             else:
                 qualname = None
-        # pprint(sys.modules)
         # file_ = getattr(module, "__file__", None)
 
         return {

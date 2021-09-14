@@ -1,11 +1,5 @@
-from pprint import pprint
 from ..open_spec.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    ErrorSchema,
-    GistSchema,
-    gistObj1,
-)
 from ..open_spec.decorators import Deferred, path_details
 
 

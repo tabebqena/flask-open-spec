@@ -1,5 +1,5 @@
 import os
-from typing import Callable, cast
+from typing import Callable
 
 import click
 from flask import Flask
@@ -7,14 +7,14 @@ from flask.cli import AppGroup
 from openapi_spec_validator import validate_spec
 
 from .__loader import __load_data, _OpenSpec__load_data  # noqa
-from .consumer.__serializer import (
-    __ResponseSerializer,  # noqa
+from .consumer.__serializer import (  # noqa
+    __ResponseSerializer,
     _OpenSpec__ResponseSerializer,
-)
-from .consumer.__validator import (
-    __RequestsValidator,  # noqa
+)  # noqa
+from .consumer.__validator import (  # noqa
+    __RequestsValidator,
     _OpenSpec__RequestsValidator,
-)
+)  # noqa
 from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
 from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
