@@ -12,15 +12,7 @@ if TYPE_CHECKING:
     from ..open_spec import OpenSpec
 
 from .._parameters import rule_to_path
-
-
-def resolve_schema(oas: dict, schema: dict):
-    ref = schema.get("$ref", None)
-    if ref:
-        rv = ref.split("#/components/schemas/")[-1]
-        obj = oas.get("components", {}).get("schemas", {}).get(rv, {})
-        return obj
-    return schema
+from ._utils import resolve_oas_object
 
 
 class __RequestsValidator:
@@ -59,19 +51,6 @@ class __RequestsValidator:
 
         return request.data or {}
 
-    def __resolve_request_body(self, rb: dict):
-        if not rb:
-            return rb
-        if rb.get("$ref", None):
-            name = rb.get("$ref", "").split("/")[-1]
-            return (
-                self.__get_oas_data()
-                .get("components", {})
-                .get("requestBodies", {})
-                .get(name, {})
-            )
-        return rb
-
     @lru_cache(maxsize=50)
     def __get_request_body_xschema(self, path: str):
         row_oas = self.__get_oas_data()
@@ -80,13 +59,15 @@ class __RequestsValidator:
 
         if method in ["get", "delete", "head"]:
             return None, False
-        body = self.__resolve_request_body(
+        body = resolve_oas_object(
+            row_oas,
             (
                 row_oas.get("paths", {})
                 .get(path, {})
                 .get(method.lower(), {})
                 .get("requestBody", {})
-            )
+            ),
+            "rb",
         )
 
         if not body:
@@ -116,7 +97,7 @@ class __RequestsValidator:
         if not xschema:
             schema = body.get("content", {}).get(mt, {}).get("schema")
             if schema:
-                schema = resolve_schema(row_oas, schema)
+                schema = resolve_oas_object(row_oas, schema, "schema")
                 xschema = cast(
                     Schema, body.get("content", {}).get(mt, {}).get("x-schema")
                 )

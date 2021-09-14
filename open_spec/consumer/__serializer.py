@@ -1,13 +1,16 @@
 from functools import lru_cache, wraps
 from http import HTTPStatus
-from http.client import responses
 from logging import warning
 
 from marshmallow import Schema
 from ..plugin.utils import resolve_schema_instance
 from typing import Union, Any, TYPE_CHECKING, cast
 from flask import request
-
+from ._utils import (
+    resolve_oas_object,
+    parse_headers,
+    parse_status,
+)
 
 if TYPE_CHECKING:
     from ..open_spec import OpenSpec
@@ -16,52 +19,6 @@ from .._parameters import rule_to_path
 
 from werkzeug.datastructures import Headers
 from werkzeug.wrappers import Response as BaseResponse
-
-
-def parse_headers(headers: Union[dict, list, tuple, Headers]) -> Headers:
-    if isinstance(headers, Headers):
-        return headers
-    rv = Headers()
-    items: tuple = ()
-    if isinstance(headers, dict):
-        items = tuple(headers.items())
-    if isinstance(headers, tuple):
-        items = (headers,)
-    if isinstance(headers, list):
-        items = tuple(headers)
-    for item in items:
-        rv.add(item[0], item[1])
-    return rv
-
-
-def parse_status(status: Union[None, int, HTTPStatus]) -> HTTPStatus:
-    if isinstance(status, HTTPStatus):
-        return status
-    if not status:
-        return HTTPStatus.OK
-    if isinstance(status, int):
-        return HTTPStatus(status)
-    return status
-
-
-def resolve_response(oas: dict, response_obj):
-    ref = response_obj.get("$ref", None)
-    if ref:
-        rv = ref.split("#/components/responses/")[-1]
-        response_obj_ = (
-            oas.get("components", {}).get("responses", {}).get(rv, {})
-        )
-        return response_obj_
-    return response_obj
-
-
-def resolve_schema(oas: dict, schema: dict):
-    ref = schema.get("$ref", None)
-    if ref:
-        rv = ref.split("#/components/schemas/")[-1]
-        obj = oas.get("components", {}).get("schemas", {}).get(rv, {})
-        return obj
-    return schema
 
 
 class __ResponseSerializer:
@@ -93,6 +50,7 @@ class __ResponseSerializer:
                     return self.__serialize_response(func_res)
                 except Exception as e:
                     warning(e)
+                    return func_res
 
             self.app.view_functions[endpoint] = wrapped
 
@@ -131,7 +89,9 @@ class __ResponseSerializer:
             response_object = responses.get("default", None)
         if not response_object:
             return None
-        response_object = resolve_response(row_oas, response_object)
+        response_object = resolve_oas_object(
+            row_oas, response_object, "response"
+        )
         # response object is dictionary of description, content
         content = response_object.get("content", {})
         # content is dictionary of mimetype to schema
@@ -163,7 +123,7 @@ class __ResponseSerializer:
         if not xschema:
             schema = media_type_object.get("schema", None)
             if schema:
-                schema = resolve_schema(row_oas, schema)
+                schema = resolve_oas_object(row_oas, schema, "schema")
                 xschema = cast(Schema, schema.get("x-schema"))
 
         # schema = resolve_schema(row_oas, schema)
