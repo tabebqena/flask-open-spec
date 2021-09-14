@@ -38,59 +38,6 @@ def _merge_recursive(child, parent):
     return child if child is not None else parent
 
 
-ALLOW_NULL = ["security"]
-ALLOW_EMPTY = ["security", "responses"]
-
-
-def remove_none(obj, key=None, allow=[]):
-    if key in ALLOW_NULL or key in allow:
-        return obj
-    if isinstance(obj, (list, tuple, set)):
-        return type(obj)(remove_none(x) for x in obj if x is not None)
-    elif isinstance(obj, dict):
-        return type(obj)(
-            (remove_none(k, key=k), remove_none(v, key=k))
-            for k, v in obj.items()
-            if k is not None and v is not None
-        )
-    else:
-        return obj
-
-
-def remove_empty(obj, key=None):
-    if key in ALLOW_EMPTY:
-        return obj
-    if isinstance(obj, (list, tuple, set)):
-        return (
-            type(obj)(
-                remove_empty(x) for x in obj if x and x not in ALLOW_EMPTY
-            )
-            or None
-        )
-    elif isinstance(obj, dict):
-        res = {}
-        for k, v in obj.items():
-            if k in ALLOW_EMPTY:
-                res[k] = v
-            else:
-                res[k] = remove_empty(v, key=k)
-        return res or None
-    else:
-        if obj:
-            return obj
-        else:
-            return None
-
-
-def clean_data(data):
-    cycles = 10
-    count = 0
-    while count < cycles:
-        data = remove_empty(remove_none(remove_empty(data)))
-        count += 1
-    return data
-
-
 def clean_parameters_list(params: List[Dict]) -> List[Dict]:
     """
     clean_parameters_list [summary]
