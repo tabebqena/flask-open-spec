@@ -1,3 +1,4 @@
+from copy import deepcopy
 import importlib
 from inspect import getmodule, isclass, isfunction
 from pprint import pprint
@@ -34,6 +35,8 @@ def resolve_schema_instance(schema, **kwargs):
         return schema(**kwargs)
     if isinstance(schema, marshmallow.Schema):
         return schema
+    if isfunction(schema):
+        return schema  # schema(**_kwargs), kwargs
     return class_registry.get_class(schema)(**kwargs)
 
 
@@ -79,7 +82,7 @@ def get_schema_info(schema, **kwargs) -> dict:
     if is_klass and issubclass(schema, marshmallow.Schema):
         module = getmodule(schema)
         if orig_schema:
-            name = orig_schema
+            name = orig_schema.split(".")[-1]  # orig_schema
             qualname = (
                 getattr(schema, "__module__", "")
                 + "."
@@ -106,7 +109,7 @@ def get_schema_info(schema, **kwargs) -> dict:
         # schema = schema  # cast(marshmallow.Schema, schema)
 
         if orig_schema:
-            name = orig_schema
+            name = orig_schema.split(".")[-1]  # orig_schema
             qualname = (
                 getattr(schema, "__module__", "")
                 + "."
@@ -141,7 +144,7 @@ def get_schema_info(schema, **kwargs) -> dict:
     elif is_function:
         module = getmodule(schema)
         if orig_schema:
-            name = orig_schema
+            name = orig_schema.split(".")[-1]  # orig_schema
             qualname = (
                 getattr(schema, "__module__", "")
                 + "."
@@ -155,7 +158,7 @@ def get_schema_info(schema, **kwargs) -> dict:
                 qualname = None
 
         # file_ = getattr(module, "__file__", None)
-        instance = cast(Callable, schema)(**kwargs)
+        instance = cast(Callable, schema(**kwargs))  # (**kwargs)
         return {
             "name": name,
             "qualname": qualname,
