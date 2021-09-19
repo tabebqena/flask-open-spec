@@ -91,8 +91,6 @@ def _get_mimetype(content_keys: list, accepts: str) -> str:
         if accept.strip() in content_keys:
             return accept
         if accept.endswith("/*"):
-            # mt = f"""{accept.split("/")[0]}/*"""
-            # print(mt)
             for k in content_keys:
                 if k.split("/")[0] == accept.split("/")[0]:
                     return k

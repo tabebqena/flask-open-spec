@@ -55,20 +55,15 @@ class __RequestsValidator:
         body_content = body.get("content", {})
         media_type_obj = {}
 
-        media_type_obj = body_content.get(mt, {})  # .get("x-schema", ""))
+        media_type_obj = body_content.get(mt, {})  
         if not media_type_obj:
             body_content_keys = list(body_content.keys())
-            print(body_content_keys)
             body_content_keys = [
                 k for k in body_content_keys if not k.startswith("x-")
             ]
-            print(body_content_keys)
-
             if len(body_content_keys) == 1:
                 mt = body_content_keys[0]
                 media_type_obj = body_content.get(mt, {})
-                # .get("x-schema", "")
-        print(69, media_type_obj)
 
         """xschema_kwargs = row_oas["components"]["schemas"][schema_name][
             "x-schema-kwargs"
