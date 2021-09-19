@@ -1,6 +1,9 @@
 from functools import lru_cache
 from http import HTTPStatus
+import json
 from logging import warning
+
+from pyrsistent import b
 from ..plugin.utils import resolve_schema_instance
 from typing import TYPE_CHECKING, Optional, cast
 from flask import Response, abort, g, jsonify, make_response
@@ -12,7 +15,7 @@ if TYPE_CHECKING:
     from ..open_spec import OpenSpec
 
 from .._parameters import rule_to_path
-from ._utils import resolve_oas_object
+from ._utils import _resolve_oas_object, _get_row_oas, _get_request_body_data
 
 
 class __RequestsValidator:
@@ -25,41 +28,15 @@ class __RequestsValidator:
             return
         self.row_oas = {}
 
-    def __get_oas_data(self):
-        if self.row_oas:
-            return self.row_oas
-        else:
-            self.row_oas = self.open_spec.oas_data
-        return self.row_oas
-
-    def __get_request_body_data(self, include_args=False):
-        if request.is_json:
-            return request.get_json()
-
-        mt = request.mimetype
-        if mt in [
-            "application/x-www-form-urlencoded",
-        ]:
-            if include_args:
-                return request.values.to_dict()
-            else:
-                return request.form.to_dict()
-        elif mt in ["multipart/form-data"]:
-            return request.files.to_dict()
-        elif include_args and request.args:
-            return request.args.to_dict()
-
-        return request.data or {}
-
     @lru_cache(maxsize=50)
     def __get_request_body_xschema(self, path: str):
-        row_oas = self.__get_oas_data()
+        row_oas = _get_row_oas(self)
         mt = request.mimetype
         method = request.method
 
         if method in ["get", "delete", "head"]:
             return None, False
-        body = resolve_oas_object(
+        body = _resolve_oas_object(
             row_oas,
             (
                 row_oas.get("paths", {})
@@ -75,29 +52,35 @@ class __RequestsValidator:
         is_required = body.get("required", False)
 
         xschema = ""
-        if mt:
-            xschema = cast(
-                Schema, body.get("content", {}).get(mt, {}).get("x-schema", "")
-            )
-        else:
-            body_content = body.get("content", {})
+        body_content = body.get("content", {})
+        media_type_obj = {}
+
+        media_type_obj = body_content.get(mt, {})  # .get("x-schema", ""))
+        if not media_type_obj:
             body_content_keys = list(body_content.keys())
+            print(body_content_keys)
             body_content_keys = [
                 k for k in body_content_keys if not k.startswith("x-")
             ]
+            print(body_content_keys)
+
             if len(body_content_keys) == 1:
                 mt = body_content_keys[0]
-            xschema = cast(
-                Schema, body.get("content", {}).get(mt, {}).get("x-schema", "")
-            )
+                media_type_obj = body_content.get(mt, {})
+                # .get("x-schema", "")
+        print(69, media_type_obj)
 
         """xschema_kwargs = row_oas["components"]["schemas"][schema_name][
             "x-schema-kwargs"
         ]"""
+        xschema = cast(
+            Schema,
+            media_type_obj.get("x-schema"),
+        )
         if not xschema:
-            schema = body.get("content", {}).get(mt, {}).get("schema")
+            schema = body_content.get(mt, {}).get("schema")
             if schema:
-                schema = resolve_oas_object(row_oas, schema, "schema")
+                schema = _resolve_oas_object(row_oas, schema, "schema")
                 xschema = cast(
                     Schema, body.get("content", {}).get(mt, {}).get("x-schema")
                 )
@@ -114,10 +97,22 @@ class __RequestsValidator:
             xschema, is_required = self.__get_request_body_xschema(
                 rule_to_path(request.url_rule),
             )
-            body_data = cast(dict, self.__get_request_body_data())
+            body_data = cast(dict, _get_request_body_data())
+            if isinstance(
+                body_data,
+                (
+                    str,
+                    bytes,
+                ),
+            ):
+                try:
+                    body_data = json.loads(body_data)
+                except Exception:
+                    pass
 
             if xschema:
                 schema = resolve_schema_instance(xschema)
+
                 validation_errors = schema.validate(
                     data=body_data,
                 )

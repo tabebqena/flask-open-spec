@@ -30,6 +30,22 @@ oas_data = {
                 },
             },
         },
+        "/not_required": {
+            "post": {
+                "requestBody": {
+                    "description": "A JSON object containing user information",
+                    "required": False,
+                    "content": {
+                        "application/json": {
+                            "schema": UserSchema,
+                        },
+                        "text/html": {
+                            "schema": UserSchema,
+                        },
+                    },
+                },
+            },
+        },
     },
 }
 
@@ -54,6 +70,10 @@ class TestValidator(TestCase):
 
         @app.route("/users", methods=["POST"])
         def post_user():
+            return ""
+
+        @app.route("/not_required", methods=["POST"])
+        def not_required():
             return ""
 
         return super().setUp()
@@ -114,3 +134,45 @@ class TestValidator(TestCase):
             self.assertEqual(res.status_code, HTTPStatus.BAD_REQUEST)
             self.assertNotIn("request_body_data", g)
             self.assertNotIn("request_body_errors", g)
+
+    def test_no_mimetype(self):
+        data = {"name": "ahmad"}
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+
+            res = client.post(
+                "/users",
+                data=json.dumps(data),
+            )
+            self.assertEqual(res.status_code, HTTPStatus.OK)
+            self.assertEqual(g.get("request_body_data"), data)
+            self.assertEqual(g.get("request_body_errors"), {})
+
+    def test_not_required(self):
+        data = {"name": "ahmad"}
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post(
+                "/not_required",
+                data=json.dumps(data),
+                mimetype="application/json",
+            )
+            self.assertEqual(res.status_code, HTTPStatus.OK)
+            self.assertEqual(g.get("request_body_data"), data)
+            self.assertEqual(g.get("request_body_errors"), {})
+
+    def test_not_required_no_schema(self):
+        data = {"name": "ahmad"}
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post(
+                "/not_required",
+                data=json.dumps(data),
+                mimetype="application/xml",
+            )
+            self.assertEqual(res.status_code, HTTPStatus.OK)
+            self.assertEqual(g.get("request_body_data"), data)
+            self.assertEqual(
+                g.get("request_body_errors"),
+                {"_schema": "Can't find schema to validate this request"},
+            )

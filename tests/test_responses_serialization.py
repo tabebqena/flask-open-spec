@@ -1,12 +1,14 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from http import HTTPStatus
+from ntpath import join
 import os
 import shutil
 from marshmallow import Schema, fields
 from unittest import TestCase
 import json
-from flask import Flask, g
+from flask import Flask, g, redirect as flask_redirect
+import pytest
 
 from ..open_spec.open_spec import OpenSpec
 
@@ -18,6 +20,20 @@ class User:
     avatar: str
 
 
+@dataclass
+class VerboseUser:
+    id: int
+    name: str
+    avatar: str
+    tel: str
+
+
+@dataclass
+class BreifUser:
+    id: int
+    name: str
+
+
 class UserSchema(Schema):
     id = fields.Integer(required=True)
     name = fields.Str(required=True)
@@ -25,6 +41,18 @@ class UserSchema(Schema):
 
 
 oas_data = {
+    "components": {
+        "responses": {
+            "User": {
+                "description": "OK",
+                "content": {
+                    "application/json": {
+                        "schema": UserSchema,
+                    }
+                },
+            },
+        }
+    },
     "paths": {
         "/users": {
             "post": {
@@ -46,6 +74,110 @@ oas_data = {
                 },
             },
         },
+        "/verbose": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": UserSchema,
+                            },
+                        },
+                    }
+                },
+            },
+        },
+        "/breif": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": UserSchema,
+                            },
+                        },
+                    }
+                },
+            },
+        },
+        "/range": {
+            "post": {
+                "responses": {
+                    "2XX": {
+                        "description": "Error",
+                        "content": {
+                            "application/json": {
+                                "schema": UserSchema,
+                            }
+                        },
+                    }
+                },
+            },
+        },
+        "/default": {
+            "post": {
+                "responses": {
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": UserSchema,
+                            }
+                        },
+                    }
+                },
+            },
+        },
+        "/no_response": {
+            "post": {
+                "responses": {},
+            },
+        },
+        "/no_response_error": {
+            "post": {
+                "responses": {},
+            },
+        },
+        "/reused": {
+            "post": {
+                "responses": {
+                    "default": {"$ref": "#/components/responses/User"},
+                },
+            },
+        },
+        "no_content": {
+            "post": {
+                "responses": {
+                    "default": {"description": "OK", "content": {}},
+                }
+            },
+        },
+        "no_content_error": {
+            "post": {
+                "responses": {
+                    "default": {"description": "OK", "content": {}},
+                }
+            },
+        },
+        "/explicit_mimetype": {
+            "post": {
+                "responses": {
+                    "default": {
+                        "description": "OK",
+                        "content": {
+                            "application/xml": {
+                                "schema": UserSchema,
+                            },
+                            "application/xml2": {
+                                "schema": UserSchema,
+                            },
+                        },
+                    }
+                },
+            },
+        },
     },
 }
 
@@ -59,6 +191,7 @@ class TestSerializer(TestCase):
                 "OAS_SERIALIZE_RESPONSE": True,
                 "OAS_DIR": "./test_oas",
                 "OAS_VALIDATE_ON_BUILD": False,
+                "OAS_FILE_SAVE": False,
             },
         )
 
@@ -67,13 +200,57 @@ class TestSerializer(TestCase):
         app = self.app
         app.config["debug"] = True
         app.config["TESTING"] = True
+        self.data = {"id": 1, "name": "ahmad", "avatar": "http://avatar"}
 
         # app.before_request(lambda: print(request.__dict__))
 
         @app.route("/users", methods=["POST"])
         def post_user():
-            u = User(1, "ahmad", "http://avatar")
+            u = User(**self.data)
             return u
+
+        @app.route("/verbose", methods=["POST"])
+        def verbose():
+            u = VerboseUser(**self.data, tel="12345")
+            return u
+
+        @app.route("/range", methods=["POST"])
+        def range():
+            u = User(**self.data)
+            return u
+
+        @app.route("/breif", methods=["POST"])
+        def breif():
+            u = BreifUser(id=self.data["id"], name=self.data["name"])
+            return u
+
+        @app.route("/no_response", methods=["POST"])
+        def no_response():
+            return {"data": None}
+
+        @app.route("/no_response_error", methods=["POST"])
+        def no_response_error():
+            u = User(**self.data)
+            return u
+
+        @app.route("/default", methods=["POST"])
+        def default():
+            u = User(**self.data)
+            return u
+
+        @app.route("/no_content", methods=["POST"])
+        def no_content():
+            return {"data": None}
+
+        @app.route("/no_content_error", methods=["POST"])
+        def no_content_error():
+            u = User(**self.data)
+            return u
+
+        @app.route("/explicit_mimetype", methods=["POST"])
+        def explicit_mimetype():
+            u = User(**self.data)
+            return u, {"Content-Type": "application/xml2"}
 
         return super().setUp()
 
@@ -87,44 +264,91 @@ class TestSerializer(TestCase):
 
         return super().tearDown()
 
-    def test_no_schema(self):
-        return
-        _oas_data = deepcopy(oas_data)
-        _oas_data["paths"]["/users"]["post"]["requestBody"]["content"][
-            "application/json"
-        ]["schema"] = {"type": "object"}
-        self.set_open_spec(_oas_data)
-        data = {"name": "ahmad"}
-        with self.app.test_client() as client:
-            res = client.post(
-                "/users",
-                data=json.dumps(data),
-                mimetype="application/json",
-            )
-            self.assertEqual(res.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-            self.assertEqual(
-                json.loads(res.get_data()),
-                {"_schema": "Can't find schema to validate this request"},
-            )
-
-    def test_valid(self):
-        data = {"name": "ahmad"}
+    def test_users(self):
         self.set_open_spec(oas_data)
         with self.app.test_client() as client:
-
             res = client.post("/users")
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.get_json(), self.data)
 
-    def test_invalid(self):
-        return
-        data = {"name": "ahmad", "tel": 1234}
+    def test_verbose(self):
         self.set_open_spec(oas_data)
         with self.app.test_client() as client:
-
             res = client.post(
-                "/users",
-                data=json.dumps(data),
-                mimetype="application/json",
+                "/verbose",
             )
-            self.assertEqual(res.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertNotIn("request_body_data", g)
-            self.assertNotIn("request_body_errors", g)
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.get_json(), self.data)
+
+    def test_breif(self):
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post(
+                "/breif",
+            )
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(
+                res.get_json(),
+                {"id": self.data["id"], "name": self.data["name"]},
+            )
+
+    def test_range_status_code_response(self):
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post("/range")
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.get_json(), self.data)
+
+    def test_default_response(self):
+
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post("/default")
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.get_json(), self.data)
+
+    def test_reused_response(self):
+
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post("/users")
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.get_json(), self.data)
+
+    def test_no_response(self):
+
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post("/no_response")
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(res.get_json(), {"data": None})
+
+    def test_no_response_error(self):
+        self.set_open_spec(oas_data)
+        with self.assertRaises(TypeError):
+            client = self.app.test_client()
+            client.post("/no_response_error")
+
+    def test_no_content_response(self):
+
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post("/no_content")
+            self.assertEqual(res.status_code, 200)
+
+    def test_no_content_response_error(self):
+
+        self.set_open_spec(oas_data)
+        with self.assertRaises(TypeError):
+            client = self.app.test_client()
+            client.post("/no_content_error")
+
+    def test_explicit_mimetype(self):
+
+        self.set_open_spec(oas_data)
+        with self.app.test_client() as client:
+            res = client.post("/explicit_mimetype")
+            self.assertEqual(res.status_code, 200)
+            data = res.get_data()
+
+            self.assertEqual(json.loads(data), self.data)
