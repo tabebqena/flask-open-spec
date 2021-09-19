@@ -119,7 +119,7 @@ class TemplatesEditor:
     def __mk_dirs_files(self):
         try:
             os.makedirs(self.config.oas_dir_path)
-        except:
+        except Exception as e:
             pass
         try:
             os.makedirs(self.config.fragments_dir_path)
@@ -130,7 +130,8 @@ class TemplatesEditor:
         if self.config.save_sections_files:
             for f in self.config.sections_files_list:
                 if not os.path.exists(f):
-                    open(f, "w").close()
+                    with open(f, "w") as f_:
+                        f_.close()
         else:
             if not os.path.exists(self.config.overrides_dir_path):
                 open(self.config.overrides_dir_path, "w").close()
