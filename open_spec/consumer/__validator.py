@@ -6,16 +6,19 @@ from logging import warning
 from pyrsistent import b
 from ..plugin.utils import resolve_schema_instance
 from typing import TYPE_CHECKING, Optional, cast
-from flask import Response, abort, g, jsonify, make_response
-
-from flask import request
+from flask import abort, g, jsonify, make_response, request
+from flask.wrappers import Response
 from marshmallow import Schema
 
 if TYPE_CHECKING:
     from ..open_spec import OpenSpec
 
 from .._parameters import rule_to_path
-from ._utils import _resolve_oas_object, _get_row_oas, _get_request_body_data
+from ._utils import (
+    _resolve_oas_object,
+    _get_row_oas,
+    _get_request_body_data,
+)
 
 
 class __RequestsValidator:
@@ -28,11 +31,10 @@ class __RequestsValidator:
             return
         self.row_oas = {}
 
+    # should have all keys to used as key for caching
     @lru_cache(maxsize=50)
-    def __get_request_body_xschema(self, path: str):
+    def __get_request_body_xschema(self, path: str, method: str, mimetype: str):
         row_oas = _get_row_oas(self)
-        mt = request.mimetype
-        method = request.method
 
         if method in ["get", "delete", "head"]:
             return None, False
@@ -55,15 +57,15 @@ class __RequestsValidator:
         body_content = body.get("content", {})
         media_type_obj = {}
 
-        media_type_obj = body_content.get(mt, {})  
+        media_type_obj = body_content.get(mimetype, {})
         if not media_type_obj:
             body_content_keys = list(body_content.keys())
             body_content_keys = [
                 k for k in body_content_keys if not k.startswith("x-")
             ]
             if len(body_content_keys) == 1:
-                mt = body_content_keys[0]
-                media_type_obj = body_content.get(mt, {})
+                mimetype = body_content_keys[0]
+                media_type_obj = body_content.get(mimetype, {})
 
         """xschema_kwargs = row_oas["components"]["schemas"][schema_name][
             "x-schema-kwargs"
@@ -73,11 +75,12 @@ class __RequestsValidator:
             media_type_obj.get("x-schema"),
         )
         if not xschema:
-            schema = body_content.get(mt, {}).get("schema")
+            schema = body_content.get(mimetype, {}).get("schema")
             if schema:
                 schema = _resolve_oas_object(row_oas, schema, "schema")
                 xschema = cast(
-                    Schema, body.get("content", {}).get(mt, {}).get("x-schema")
+                    Schema,
+                    body.get("content", {}).get(mimetype, {}).get("x-schema"),
                 )
         return xschema, is_required
 
@@ -91,6 +94,8 @@ class __RequestsValidator:
             validation_errors = {}
             xschema, is_required = self.__get_request_body_xschema(
                 rule_to_path(request.url_rule),
+                mimetype=request.mimetype,
+                method=request.method,
             )
             body_data = cast(dict, _get_request_body_data())
             if isinstance(
