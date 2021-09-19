@@ -14,6 +14,7 @@ from ._utils import (
     _get_best_media_type_object,
     _get_row_oas,
     _parse_view_function_res,
+    _get_accepts_headers,
 )
 
 if TYPE_CHECKING:
@@ -99,12 +100,7 @@ class __ResponseSerializer:
         except TypeError:
             return rv
 
-        accepts: str = ",".join(
-            [
-                a.split(";")[0].strip()
-                for a in request.headers.get("Accept", "").split(",")
-            ]
-        )
+        accepts: str = _get_accepts_headers()
         xschema = self.__get_response_schema(status, mimetype, accepts)
 
         if xschema:

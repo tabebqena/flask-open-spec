@@ -193,3 +193,12 @@ def _get_request_body_data(include_args=False):
         return request.args.to_dict()
 
     return request.data or {}
+
+
+def _get_accepts_headers():
+    return ",".join(
+        [
+            a.split(";")[0].strip()
+            for a in request.headers.get("Accept", "").split(",")
+        ]
+    )
