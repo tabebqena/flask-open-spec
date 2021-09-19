@@ -241,36 +241,6 @@ class OasBuilder:
             schema, schema_kwargs
         )
         _add_schema_to_components(self.apispec, name, schema_data)
-        """self.apispec.components.schema(schema_name, schema_data)
-
-        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
-
-        spec.path(
-            "/invalid",
-            operations={
-                "get": {
-                    "responses": {
-                        "default": {
-                            "content": {"application/json": {"schema": schema}}
-                        }
-                    }
-                },
-            },
-        )
-        dict_ = spec.to_dict()
-        name = list(dict_["components"]["schemas"].keys())[0]
-        schema_data = dict_["components"]["schemas"][name]
-        "self.data = cast(
-            dict,
-            merge_recursive(
-                [
-                    {"components": {"schemas": {name: schema_data}}},
-                    self.data,
-                ]
-            ),
-        )"
-        self.apispec.components.schema(name, schema_data)
-        """
         return name
 
     def component_response(
@@ -299,38 +269,6 @@ class OasBuilder:
                 }
             }
         )
-        return
-        # delete this after full testing
-
-        response, schemas = self.components_resolver._component_response(
-            {
-                "content": {
-                    content_type: {
-                        "schema": schema,
-                        "x-schema-kwargs": schema_kwargs,
-                    }
-                },
-                "description": description,
-            },
-        )
-
-        schema_name = list(schemas.keys())[0]
-        schema_data = schemas.get(schema_name)
-        _add_schema_to_components(self.apispec, schema_name, schema_data)  # type: ignore
-
-        self.data = cast(
-            dict,
-            merge_recursive(
-                [
-                    {
-                        "components": {
-                            "responses": {response_name: response},
-                        },
-                    },
-                    self.data,
-                ],
-            ),
-        )
 
     def component_request_body(
         self, request_body_name: str, content_type: str, schema: Any, **kwargs
@@ -351,51 +289,6 @@ class OasBuilder:
                 }
             }
         )
-        return
-        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
-        spec.path(
-            "/invalid",
-            operations={
-                "post": {
-                    "requestBody": {
-                        "content": {
-                            content_type: {
-                                "schema": schema,
-                            }
-                        },
-                    }
-                },
-            },
-        )
-        dict_ = spec.to_dict()
-        body_data = (
-            dict_.get("paths", {})
-            .get("/invalid", {})
-            .get("post", {})
-            .get("requestBody", {})
-        )
-        schemas = dict_.get("components", {}).get("schemas", {})
-        schema_name = list(schemas.keys())[0]
-        schema_data = (
-            dict_.get("components", {}).get("schemas", {}).get(schema_name)
-        )
-
-        self.data = cast(
-            dict,
-            merge_recursive(
-                [
-                    {
-                        "components": {
-                            "requestBodies": {request_body_name: body_data},
-                            "schemas": {schema_name: schema_data},
-                        },
-                    },
-                    self.data,
-                ]
-            ),
-        )
-
-        # self.data["paths"][path][mthd]["requestBody"] = request_body
 
     def component_parameter(
         self, parameter_name, in_, name, schema, description="", **kwargs
@@ -418,42 +311,6 @@ class OasBuilder:
                     }
                 }
             }
-        )
-        return
-        # delete after full testing
-
-        param = {
-            "in": in_,
-            "name": name,
-            "schema": schema,
-            "description": description,
-            "required": required,
-            **kwargs,
-        }
-
-        spec = APISpec("title", "1", "3.0.2", plugins=[MarshmallowPlugin()])
-        spec.path("/invalid", operations={"get": {"parameters": [param]}})
-        dict_ = spec.to_dict()
-        param_data = (
-            dict_.get("paths", {})
-            .get("/invalid", {})
-            .get("get", {})
-            .get("parameters", [])[0]
-        )
-
-        self.data = cast(
-            dict,
-            merge_recursive(
-                [
-                    {
-                        "components": {
-                            "parameters": {parameter_name: param_data},
-                            #     "schemas": {schema_name: schema_data},
-                        },
-                    },
-                    self.data,
-                ]
-            ),
         )
 
     def component_header(self, header_name, schema, description="", **kwargs):
@@ -541,7 +398,6 @@ class OasBuilder:
                 ]
             ),
         )
-        # self.data["paths"][path][mthd]["requestBody"] = request_body
 
     def path_response(
         self,
