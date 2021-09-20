@@ -72,7 +72,9 @@ REQUEST_STUB_SHORT = dict(
     required=False,
     content={
         "application/json": {
-            "schema": None,
+            "schema": {
+                "type": "object",
+            },
         },
     },
 )
