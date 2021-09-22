@@ -1,4 +1,4 @@
-from .open_oas.open_oas import (
+from .open_oas import (
     OasConfig,  # noqa
     OpenOas,  # noqa
     component_header,  # noqa

@@ -7,7 +7,7 @@ from unittest import TestCase
 import json
 from flask import Flask, g
 
-from ..open_oas.open_oas import OpenOas
+from ..open_oas import OpenOas
 
 
 class UserSchema(Schema):

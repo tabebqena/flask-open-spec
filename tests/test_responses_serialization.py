@@ -10,7 +10,7 @@ import json
 from flask import Flask, g, redirect as flask_redirect
 import pytest
 
-from ..open_oas.open_oas import OpenOas
+from ..open_oas import OpenOas
 
 
 @dataclass

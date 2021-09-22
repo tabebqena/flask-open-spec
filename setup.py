@@ -20,6 +20,6 @@ setuptools.setup(
     author="Ahmad Yahia",
     python_requires=">=3.8.5",
     install_requires=requirements,
-    packages=["open_oas"],
-    package_dir={"open_oas": "open_oas"},
+    packages=setuptools.find_packages(),  # ["open_oas"],
+    # package_dir={"open_oas": "open_oas"},
 )

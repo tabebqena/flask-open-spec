@@ -1,5 +1,5 @@
 from unittest import TestCase
-from ..open_oas.open_oas.plugin import utils
+from ..open_oas.plugin import utils
 from .schemas.schemas import GistSchema, gistObj1, get_schema
 
 

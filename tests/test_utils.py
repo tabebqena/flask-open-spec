@@ -1,5 +1,5 @@
 from unittest import TestCase
-from ..open_oas.open_oas._utils import merge_recursive
+from ..open_oas._utils import merge_recursive
 
 
 class mergeDicts(TestCase):

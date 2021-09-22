@@ -3,7 +3,7 @@ from unittest import TestCase
 from flask import Flask
 from werkzeug.datastructures import Headers
 from http import HTTPStatus
-from ..open_oas.open_oas.consumer._utils import (
+from ..open_oas.consumer._utils import (
     _parse_status,
     _parse_headers,
     _resolve_oas_object,

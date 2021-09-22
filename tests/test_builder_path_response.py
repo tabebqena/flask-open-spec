@@ -1,7 +1,7 @@
-from ..open_oas.open_oas.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import GistSchema, gistObj1
-from ..open_oas.open_oas.decorators import Deferred, path_response
+from ..open_oas.decorators import Deferred, path_response
 
 
 class TestPathResponse(TestCase):

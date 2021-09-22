@@ -1,7 +1,7 @@
-from ..open_oas.open_oas.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
 from .schemas.schemas import GistSchema, gistObj1, get_schema
-from ..open_oas.open_oas.decorators import Deferred, component_schema
+from ..open_oas.decorators import Deferred, component_schema
 
 
 class TestSchemaDict(TestCase):

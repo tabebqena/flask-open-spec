@@ -10,7 +10,7 @@ import json
 from flask import Flask
 from flask.wrappers import Response
 import pytest
-from ..open_oas.open_oas import OpenOas
+from ..open_oas import OpenOas
 
 
 oas_data = {
