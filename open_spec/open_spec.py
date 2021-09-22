@@ -15,6 +15,9 @@ from .consumer.__validator import (  # noqa
     __RequestsValidator,
     _OpenSpec__RequestsValidator,
 )  # noqa
+from .consumer.__authenticator import (  # noqa
+    _RequestsAuthenticator,
+)  # noqa
 from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
 from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
@@ -90,9 +93,12 @@ class OpenSpec:
             self,
             blueprint_name=blueprint_name,
             url_prefix=url_prefix,
-            auto_build=True,  # auto_build, # should be always True
+            # is auto_build, # should be always True, WHY?
+            auto_build=auto_build,
             authorization_handler=authorization_handler,
         )
+        if self.config.authenticate_requests:
+            self.__authenticator = _RequestsAuthenticator(self)
         if self.config.validate_requests:
             __RequestsValidator(self)
         if self.config.serialize_response:
@@ -104,6 +110,7 @@ class OpenSpec:
     def build(self, validate=None, cache=None):
         self._app_paths = get_app_paths()
         template_data = make_template_data(self.config, self._app_paths)
+
         self._editor = TemplatesEditor(self, template_data, False)
 
         if validate is None:
