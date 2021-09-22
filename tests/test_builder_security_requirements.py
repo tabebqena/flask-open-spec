@@ -1,9 +1,9 @@
-from ..open_oasbuilder.builder import OasBuilder
+from ..open_oas.open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..open_oasdecorators import (
+from ..open_oas.open_oas.decorators import (
     Deferred,
     path_security_requirements,
-    security_requirements
+    security_requirements,
 )
 
 

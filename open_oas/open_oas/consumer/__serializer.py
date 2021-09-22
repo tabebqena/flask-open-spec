@@ -18,7 +18,7 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
-    from ..open_oas import OpenSpec
+    from ..open_oas import OpenOas
 
 from .._parameters import rule_to_path
 
@@ -27,7 +27,7 @@ from werkzeug.wrappers import Response as BaseResponse
 
 
 class __ResponseSerializer:
-    def __init__(self, open_oas: "OpenSpec") -> None:
+    def __init__(self, open_oas: "OpenOas") -> None:
         self.open_oas = open_oas
         self.app = open_oas.app
         self.config = open_oas.config
@@ -112,4 +112,4 @@ class __ResponseSerializer:
         return rv, status, headers
 
 
-_OpenSpec__ResponseSerializer = __ResponseSerializer
+_OpenOas__ResponseSerializer = __ResponseSerializer

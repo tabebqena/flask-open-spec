@@ -10,7 +10,7 @@ import json
 from flask import Flask, g, redirect as flask_redirect
 import pytest
 
-from ..open_oas.open_oas import OpenSpec
+from ..open_oas.open_oas import OpenOas
 
 
 @dataclass
@@ -184,7 +184,7 @@ oas_data = {
 
 class TestSerializer(TestCase):
     def set_open_oas(self, oas_data):
-        self.open_oas = OpenSpec(
+        self.open_oas = OpenOas(
             app=self.app,
             oas_data=oas_data,
             config_data={

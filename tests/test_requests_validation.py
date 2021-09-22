@@ -7,7 +7,7 @@ from unittest import TestCase
 import json
 from flask import Flask, g
 
-from ..open_oas.open_oas import OpenSpec
+from ..open_oas.open_oas import OpenOas
 
 
 class UserSchema(Schema):
@@ -52,7 +52,7 @@ oas_data = {
 
 class TestValidator(TestCase):
     def set_open_oas(self, oas_data):
-        self.open_oas = OpenSpec(
+        self.open_oas = OpenOas(
             app=self.app,
             oas_data=oas_data,
             config_data={

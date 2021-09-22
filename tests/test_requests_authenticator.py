@@ -10,7 +10,7 @@ import json
 from flask import Flask
 from flask.wrappers import Response
 import pytest
-from ..open_oasoopen_oasmport OpenSpec
+from ..open_oas.open_oas import OpenOas
 
 
 oas_data = {
@@ -172,7 +172,7 @@ class TestAuthenticator(TestCase):
     def setUp(self) -> None:
         self.app = make_app()
         self.default_message = "Test UNAUTHORIZED"
-        self.open_oas= OpenSpec(
+        self.open_oas = OpenOas(
             app=self.app,
             oas_data=oas_data,
             config_data={
@@ -182,14 +182,14 @@ class TestAuthenticator(TestCase):
             },
         )
         with self.app.app_context():
-            self.open_oasbuild()
-        self.auther = getattr(self.open_oas "_OpenSpec__authenticator")
+            self.open_oas.build()
+        self.auther = getattr(self.open_oas, "_OpenOas__authenticator")
 
         return super().setUp()
 
     def tearDown(self) -> None:
         try:
-            file_path = self.open_oasconfig.oas_dir_path
+            file_path = self.open_oas.config.oas_dir_path
             if os.path.exists(file_path):
                 shutil.rmtree(file_path)
         except:
@@ -248,7 +248,7 @@ class TestIsRequestAuthenticated(TestCase):
     def setUp(self) -> None:
         self.app = make_app()
         self.default_message = "Test UNAUTHORIZED"
-        self.open_oas= OpenSpec(
+        self.open_oas = OpenOas(
             app=self.app,
             oas_data=oas_data,
             config_data={
@@ -259,13 +259,13 @@ class TestIsRequestAuthenticated(TestCase):
             },
         )
 
-        self.auther = getattr(self.open_oas "_OpenSpec__authenticator")
+        self.auther = getattr(self.open_oas, "_OpenOas__authenticator")
 
         return super().setUp()
 
     def tearDown(self) -> None:
         try:
-            file_path = self.open_oasconfig.oas_dir_path
+            file_path = self.open_oas.config.oas_dir_path
             if os.path.exists(file_path):
                 shutil.rmtree(file_path)
         except:
@@ -274,7 +274,7 @@ class TestIsRequestAuthenticated(TestCase):
         return super().tearDown()
 
     def test_is_authenticated_one_schema_valid(self):
-        self.open_oasconfig.is_authenticated_handler = true_handler
+        self.open_oas.config.is_authenticated_handler = true_handler
 
         c = self.app.test_client()
         with c.post("/one_schema?SecKeyName=1") as res:
@@ -282,7 +282,7 @@ class TestIsRequestAuthenticated(TestCase):
 
     def test_is_authenticated_one_schema_invalid(self):
 
-        self.open_oasconfig.is_authenticated_handler = false_handler
+        self.open_oas.config.is_authenticated_handler = false_handler
         c = self.app.test_client()
         with c.post("/one_schema?SecKeyName=1") as res:
             self.assertEqual(res.status_code, HTTPStatus.UNAUTHORIZED)
@@ -292,7 +292,7 @@ class TestParseInfo(TestCase):
     def setUp(self) -> None:
         self.app = make_app()
         self.default_message = "Test UNAUTHORIZED"
-        self.open_oas= OpenSpec(
+        self.open_oas = OpenOas(
             app=self.app,
             oas_data=oas_data,
             config_data={
@@ -302,15 +302,15 @@ class TestParseInfo(TestCase):
             },
         )
         with self.app.app_context():
-            self.open_oasbuild()
-        self.auther = getattr(self.open_oas "_OpenSpec__authenticator")
+            self.open_oas.build()
+        self.auther = getattr(self.open_oas, "_OpenOas__authenticator")
         self.parser = self.auther._RequestsAuthenticator__parse_scheme_info
 
         return super().setUp()
 
     def tearDown(self) -> None:
         try:
-            file_path = self.open_oasconfig.oas_dir_path
+            file_path = self.open_oas.config.oas_dir_path
             if os.path.exists(file_path):
                 shutil.rmtree(file_path)
         except:
@@ -326,7 +326,7 @@ class TestParseInfo(TestCase):
 
             with c.post(f"/{name}"):
                 data = (
-                    self.open_oasget_spec_dict()
+                    self.open_oas.get_spec_dict()
                     .get("components", {})
                     .get("securitySchemes", {})
                     .get(name, {})
@@ -341,7 +341,7 @@ class TestParseInfo(TestCase):
 
             with c.post(f"/{name}", headers=headers):
                 data = (
-                    self.open_oasget_spec_dict()
+                    self.open_oas.get_spec_dict()
                     .get("components", {})
                     .get("securitySchemes", {})
                     .get(name, {})
@@ -356,7 +356,7 @@ class TestParseInfo(TestCase):
 
             with c.post(f"/{name}", query_string=query):
                 data = (
-                    self.open_oasget_spec_dict()
+                    self.open_oas.get_spec_dict()
                     .get("components", {})
                     .get("securitySchemes", {})
                     .get(name, {})
@@ -371,7 +371,7 @@ class TestParseInfo(TestCase):
 
             with c.post(f"/{name}", headers=headers):
                 data = (
-                    self.open_oasget_spec_dict()
+                    self.open_oas.get_spec_dict()
                     .get("components", {})
                     .get("securitySchemes", {})
                     .get(name, {})
@@ -386,7 +386,7 @@ class TestParseInfo(TestCase):
 
             with c.post(f"/{name}", headers=headers):
                 data = (
-                    self.open_oasget_spec_dict()
+                    self.open_oas.get_spec_dict()
                     .get("components", {})
                     .get("securitySchemes", {})
                     .get(name, {})
@@ -398,7 +398,7 @@ class TestAuthenticateRequests(TestCase):
     def setUp(self) -> None:
         self.app = make_app()
         self.default_message = "Test UNAUTHORIZED"
-        self.open_oas= OpenSpec(
+        self.open_oas = OpenOas(
             app=self.app,
             oas_data=oas_data,
             config_data={
@@ -409,10 +409,10 @@ class TestAuthenticateRequests(TestCase):
             },
         )
         with self.app.app_context():
-            self.open_oasbuild()
+            self.open_oas.build()
 
-        self.auther = getattr(self.open_oas "_OpenSpec__authenticator")
-        self.auther.row_oas = self.open_oasget_spec_dict()
+        self.auther = getattr(self.open_oas, "_OpenOas__authenticator")
+        self.auther.row_oas = self.open_oas.get_spec_dict()
 
         self.schemes = [
             "CookieApiKey",
@@ -440,7 +440,7 @@ class TestAuthenticateRequests(TestCase):
 
     def tearDown(self) -> None:
         try:
-            file_path = self.open_oasconfig.oas_dir_path
+            file_path = self.open_oas.config.oas_dir_path
             if os.path.exists(file_path):
                 shutil.rmtree(file_path)
         except:

@@ -1,6 +1,6 @@
-from .open_oas import (
+from .open_oas.open_oas import (
     OasConfig,  # noqa
-    OpenSpec,  # noqa
+    OpenOas,  # noqa
     component_header,  # noqa
     component_parameter,  # noqa
     component_request_body,  # noqa

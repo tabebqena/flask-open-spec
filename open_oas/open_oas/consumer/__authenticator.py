@@ -9,14 +9,14 @@ from flask import abort, g, jsonify, make_response
 from flask import request
 
 if TYPE_CHECKING:
-    from ..open_oas import OpenSpec
+    from ..open_oas import OpenOas
 
 from .._parameters import rule_to_path
 from ._utils import _resolve_oas_object, _get_row_oas, _get_request_body_data
 
 
 class _RequestsAuthenticator:
-    def __init__(self, open_oas: "OpenSpec") -> None:
+    def __init__(self, open_oas: "OpenOas") -> None:
         self.open_oas = open_oas
         self.config = open_oas.config
         if self.config.authenticate_requests:

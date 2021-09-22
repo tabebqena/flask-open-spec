@@ -1,6 +1,6 @@
-from ..open_oasbuilder.builder import OasBuilder
+from ..open_oas.open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..open_oasdecorators import Deferred, api_server
+from ..open_oas.open_oas.decorators import Deferred, api_server
 
 
 class TestSevers(TestCase):
@@ -90,7 +90,7 @@ class TestDeferred(TestCase):
 
     def tearDown(self) -> None:
         Deferred._deferred = []
-        
+
         return super().tearDown()
 
 
@@ -118,7 +118,8 @@ class TestDecorator(TestCase):
     def test_decorator(self):
         data = self.builder.get_data()
         self.assertEqual(data.get("servers", []), self.servers)
+
     def tearDown(self) -> None:
         Deferred._deferred = []
-        
+
         return super().tearDown()

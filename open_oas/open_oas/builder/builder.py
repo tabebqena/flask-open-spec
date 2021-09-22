@@ -23,7 +23,7 @@ from .utils import (
 class OasBuilder:
     """
     Builder class to create the open api specifications at runtime.
-    The generated spec will be loaded by the `OpenSpec` object.
+    The generated spec will be loaded by the `OpenOas` object.
     """
 
     def __init__(

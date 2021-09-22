@@ -1,11 +1,11 @@
-from ..open_oas.builder.builder import OasBuilder
+from ..open_oas.open_oas.builder.builder import OasBuilder
 from unittest import TestCase
 from ..tests.schemas.schemas import (
     ErrorSchema,
     GistSchema,
     gistObj1,
 )
-from ..open_oas.decorators import Deferred, component_response
+from ..open_oas.open_oas.decorators import Deferred, component_response
 
 
 class TestComponentResponse(TestCase):

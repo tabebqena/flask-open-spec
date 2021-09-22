@@ -1,6 +1,6 @@
 # pylint: skip-file
 
-from .open_oas import OpenSpec, OasConfig  # noqa
+from .open_oas import OpenOas, OasConfig  # noqa
 
 from .decorators import (  # noqa
     component_header,

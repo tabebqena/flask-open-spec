@@ -6,13 +6,13 @@ from flask import Blueprint, current_app, jsonify, render_template, url_for
 from ._utils import load_file, cache_file
 
 if TYPE_CHECKING:
-    from .open_oas import OpenSpec
+    from .open_oas import OpenOas
 
 
 class __ViewManager:
     def __init__(
         self,
-        open_oas: "OpenSpec",
+        open_oas: "OpenOas",
         blueprint_name="",
         url_prefix=None,
         auto_build=False,
@@ -128,4 +128,4 @@ class __ViewManager:
         )
 
 
-_OpenSpec__ViewManager = __ViewManager
+_OpenOas__ViewManager = __ViewManager

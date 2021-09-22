@@ -6,19 +6,19 @@ from flask import Flask
 from flask.cli import AppGroup
 from openapi_spec_validator import validate_spec
 
-from .__loader import __load_data, _OpenSpec__load_data  # noqa
+from .__loader import __load_data, _OpenOas__load_data  # noqa
 from .consumer.__serializer import (  # noqa
     __ResponseSerializer,
-    _OpenSpec__ResponseSerializer,
+    _OpenOas__ResponseSerializer,
 )  # noqa
 from .consumer.__validator import (  # noqa
     __RequestsValidator,
-    _OpenSpec__RequestsValidator,
+    _OpenOas__RequestsValidator,
 )  # noqa
 from .consumer.__authenticator import (  # noqa
     _RequestsAuthenticator,
 )  # noqa
-from .__view import __ViewManager, _OpenSpec__ViewManager  # noqa
+from .__view import __ViewManager, _OpenOas__ViewManager  # noqa
 from ._editor import TemplatesEditor
 from ._parameters import get_app_paths
 from ._utils import cache_file, yaml_dump
@@ -26,7 +26,7 @@ from .oas_config import OasConfig
 from ._editor import make_template_data
 
 
-def set_cli(open_oas: "OpenSpec"):
+def set_cli(open_oas: "OpenOas"):
     oas_cli = AppGroup(
         "oas",
         help="command line interface to control OAS of flask app and marshmallow schemas\n \
@@ -46,7 +46,7 @@ def set_cli(open_oas: "OpenSpec"):
     open_oas.app.cli.add_command(oas_cli)
 
 
-class OpenSpec:
+class OpenOas:
     def __init__(
         self,
         app: Flask = None,

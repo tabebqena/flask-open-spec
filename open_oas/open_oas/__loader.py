@@ -8,10 +8,10 @@ from ._utils import load_file, merge_recursive
 
 if TYPE_CHECKING:
     from .oas_config import OasConfig
-    from .open_oas import OpenSpec
+    from .open_oas import OpenOas
 
 
-def __load_overrides(open_oas: "OpenSpec") -> dict:
+def __load_overrides(open_oas: "OpenOas") -> dict:
     data = {}
     dir = open_oas.config.overrides_dir_path
     if not os.path.exists(dir):
@@ -27,7 +27,7 @@ def __load_overrides(open_oas: "OpenSpec") -> dict:
 
 
 def __load_data(
-    open_oas: "OpenSpec",
+    open_oas: "OpenOas",
     templates_data: Dict[str, Any],
     input_oas_data: dict = {},
 ):
@@ -116,4 +116,4 @@ def _clean_invalid_request_bodies(data: Dict[str, Dict[str, Dict]]):
     return data
 
 
-_OpenSpec__load_data = __load_data
+_OpenOas__load_data = __load_data

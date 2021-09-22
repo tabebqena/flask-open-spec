@@ -1,5 +1,5 @@
 from unittest import TestCase
-from ..open_oasplugin import utils
+from ..open_oas.open_oas.plugin import utils
 from .schemas.schemas import GistSchema, gistObj1, get_schema
 
 
@@ -12,7 +12,7 @@ class TestPluginUtils(TestCase):
         info = utils.get_schema_info(schema)
         self.assertEqual(info["name"], "GistSchema")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.GistSchema"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.GistSchema"
         )
         self.assertIsInstance(info["instance"], GistSchema)
 
@@ -21,7 +21,7 @@ class TestPluginUtils(TestCase):
         info = utils.get_schema_info(schema)
         self.assertEqual(info["name"], "gistObj1")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.gistObj1"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.gistObj1"
         )
         self.assertEqual(info["instance"], schema)
 
@@ -31,7 +31,7 @@ class TestPluginUtils(TestCase):
         info = utils.get_schema_info(schema, **kwargs)
         self.assertEqual(info["name"], "get_schema")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.get_schema"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.get_schema"
         )
         self.assertEqual(info["kwargs"], kwargs)
         self.assertIsInstance(info["instance"], GistSchema)
@@ -42,38 +42,38 @@ class TestPluginUtils(TestCase):
         info = utils.get_schema_info(schema, **kwargs)
         self.assertEqual(info["name"], "get_schema")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.get_schema"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.get_schema"
         )
         self.assertEqual(info["kwargs"], kwargs)
 
         self.assertEqual(info["instance"], GistSchema)
 
     def test_schema_str(self):
-        schema = "flask_open_oastests.schemas.schemas.GistSchema"
+        schema = "flask_open_oas.tests.schemas.schemas.GistSchema"
         info = utils.get_schema_info(schema)
         self.assertEqual(info["name"], "GistSchema")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.GistSchema"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.GistSchema"
         )
         self.assertIsInstance(info["instance"], GistSchema)
 
     def test_schema_str2(self):
-        schema = "flask_open_oastests.schemas.schemas.gistObj1"
+        schema = "flask_open_oas.tests.schemas.schemas.gistObj1"
         info = utils.get_schema_info(schema)
         self.assertEqual(info["name"], "gistObj1")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.gistObj1"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.gistObj1"
         )
         self.assertEqual(info["instance"], gistObj1)
 
     def test_schema_str3(self):
-        schema = "flask_open_oastests.schemas.schemas.get_schema"
+        schema = "flask_open_oas.tests.schemas.schemas.get_schema"
         kwargs = {"type": "class", "name": "gist"}
 
         info = utils.get_schema_info(schema, **kwargs)
         self.assertEqual(info["name"], "get_schema")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.get_schema"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.get_schema"
         )
         self.assertEqual(info["kwargs"], kwargs)
 
@@ -84,6 +84,6 @@ class TestPluginUtils(TestCase):
         info = utils.get_schema_info(schema)
         self.assertEqual(info["name"], "GistSchema")
         self.assertEqual(
-            info["qualname"], "flask_open_oastests.schemas.schemas.GistSchema"
+            info["qualname"], "flask_open_oas.tests.schemas.schemas.GistSchema"
         )
         self.assertIsInstance(info["instance"], GistSchema)
