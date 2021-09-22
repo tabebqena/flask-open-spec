@@ -408,9 +408,11 @@ class TestAuthenticateRequests(TestCase):
                 "OAS_DIR": "./test_oas",
             },
         )
+        with self.app.app_context():
+            self.open_spec.build()
 
         self.auther = getattr(self.open_spec, "_OpenSpec__authenticator")
-        self.set_row_oas()
+        self.auther.row_oas = self.open_spec.get_spec_dict()
 
         self.schemes = [
             "CookieApiKey",
@@ -459,10 +461,6 @@ class TestAuthenticateRequests(TestCase):
                 .get(name, {})
             )
             orig["x-handler"] = qualname
-
-    def set_row_oas(self):
-        if not self.auther.row_oas:
-            self.auther.row_oas = self.open_spec.get_spec_dict()
 
     def test_all_false(self):
         expected = {}
