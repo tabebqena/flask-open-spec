@@ -11,7 +11,7 @@ from flask.wrappers import Response
 from marshmallow import Schema
 
 if TYPE_CHECKING:
-    from ..open_spec import OpenSpec
+    from ..open_oas import OpenSpec
 
 from .._parameters import rule_to_path
 from ._utils import (
@@ -22,11 +22,11 @@ from ._utils import (
 
 
 class __RequestsValidator:
-    def __init__(self, open_spec: "OpenSpec") -> None:
-        self.open_spec = open_spec
-        self.config = open_spec.config
+    def __init__(self, open_oas: "OpenSpec") -> None:
+        self.open_oas = open_oas
+        self.config = open_oas.config
         if self.config.validate_requests:
-            open_spec.app.before_request(self.__validate_request_body)
+            open_oas.app.before_request(self.__validate_request_body)
         else:
             return
         self.row_oas = {}

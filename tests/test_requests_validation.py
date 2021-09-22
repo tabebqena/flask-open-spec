@@ -7,7 +7,7 @@ from unittest import TestCase
 import json
 from flask import Flask, g
 
-from ..open_spec.open_spec import OpenSpec
+from ..open_oas.open_oas import OpenSpec
 
 
 class UserSchema(Schema):
@@ -51,8 +51,8 @@ oas_data = {
 
 
 class TestValidator(TestCase):
-    def set_open_spec(self, oas_data):
-        self.open_spec = OpenSpec(
+    def set_open_oas(self, oas_data):
+        self.open_oas = OpenSpec(
             app=self.app,
             oas_data=oas_data,
             config_data={
@@ -80,7 +80,7 @@ class TestValidator(TestCase):
 
     def tearDown(self) -> None:
         try:
-            file_path = self.open_spec.config.oas_dir_path
+            file_path = self.open_oas.config.oas_dir_path
             if os.path.exists(file_path):
                 shutil.rmtree(file_path)
         except:
@@ -93,7 +93,7 @@ class TestValidator(TestCase):
         _oas_data["paths"]["/users"]["post"]["requestBody"]["content"][
             "application/json"
         ]["schema"] = {"type": "object"}
-        self.set_open_spec(_oas_data)
+        self.set_open_oas(_oas_data)
         data = {"name": "ahmad"}
         with self.app.test_client() as client:
             res = client.post(
@@ -109,7 +109,7 @@ class TestValidator(TestCase):
 
     def test_valid(self):
         data = {"name": "ahmad"}
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
 
             res = client.post(
@@ -123,7 +123,7 @@ class TestValidator(TestCase):
 
     def test_invalid(self):
         data = {"name": "ahmad", "tel": 1234}
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
 
             res = client.post(
@@ -137,7 +137,7 @@ class TestValidator(TestCase):
 
     def test_no_mimetype(self):
         data = {"name": "ahmad"}
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
 
             res = client.post(
@@ -150,7 +150,7 @@ class TestValidator(TestCase):
 
     def test_not_required(self):
         data = {"name": "ahmad"}
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post(
                 "/not_required",
@@ -163,7 +163,7 @@ class TestValidator(TestCase):
 
     def test_not_required_no_schema(self):
         data = {"name": "ahmad"}
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post(
                 "/not_required",

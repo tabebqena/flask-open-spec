@@ -1,14 +1,12 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    gistObj1
-)
-from ..open_spec.decorators import Deferred, component_header
+from ..tests.schemas.schemas import gistObj1
+from ..open_oas.decorators import Deferred, component_header
 
 
 class TestComponentHeader(TestCase):
     def run_tests(self, builder: OasBuilder):
-        obj_qualname = "flask_open_spec.tests.schemas.schemas.gistObj1"
+        obj_qualname = "flask_open_oas.tests.schemas.schemas.gistObj1"
         data = builder.get_data()
 
         header = (

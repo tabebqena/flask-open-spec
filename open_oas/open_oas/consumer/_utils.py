@@ -129,7 +129,7 @@ def _get_row_oas(obj):
     if obj.row_oas:
         return obj.row_oas
     else:
-        obj.row_oas = obj.open_spec.oas_data
+        obj.row_oas = obj.open_oas.oas_data
     return obj.row_oas
 
 

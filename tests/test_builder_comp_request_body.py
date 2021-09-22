@@ -1,14 +1,12 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    GistSchema
-)
-from ..open_spec.decorators import Deferred, component_request_body
+from ..tests.schemas.schemas import GistSchema
+from ..open_oas.decorators import Deferred, component_request_body
 
 
 class TestComponentRequestBodies(TestCase):
     def run_tests(self, builder: OasBuilder):
-        klass_qualname = "flask_open_spec.tests.schemas.schemas.GistSchema"
+        klass_qualname = "flask_open_oas.tests.schemas.schemas.GistSchema"
         data = builder.get_data()
         #
         bodies = data.get("components", {}).get("requestBodies", {})

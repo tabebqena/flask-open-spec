@@ -26,7 +26,7 @@ from .oas_config import OasConfig
 from ._editor import make_template_data
 
 
-def set_cli(open_spec: "OpenSpec"):
+def set_cli(open_oas: "OpenSpec"):
     oas_cli = AppGroup(
         "oas",
         help="command line interface to control OAS of flask app and marshmallow schemas\n \
@@ -41,9 +41,9 @@ def set_cli(open_spec: "OpenSpec"):
     @click.option("--validate", type=bool, default=True)
     @click.option("--cache", type=bool, default=True)
     def build(validate, cache):
-        open_spec.build(validate=validate, cache=cache)
+        open_oas.build(validate=validate, cache=cache)
 
-    open_spec.app.cli.add_command(oas_cli)
+    open_oas.app.cli.add_command(oas_cli)
 
 
 class OpenSpec:
@@ -105,7 +105,7 @@ class OpenSpec:
             __ResponseSerializer(self)
         #
         set_cli(self)
-        self.app.extensions["open_spec"] = self
+        self.app.extensions["open_oas"] = self
 
     def build(self, validate=None, cache=None):
         self._app_paths = get_app_paths()

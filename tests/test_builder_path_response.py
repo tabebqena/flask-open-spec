@@ -1,10 +1,7 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    GistSchema,
-    gistObj1
-)
-from ..open_spec.decorators import Deferred, path_response
+from ..tests.schemas.schemas import GistSchema, gistObj1
+from ..open_oas.decorators import Deferred, path_response
 
 
 class TestPathResponse(TestCase):
@@ -27,7 +24,7 @@ class TestPathResponse(TestCase):
             )
             self.assertEqual(
                 val.get("x-schema", {}),
-                "flask_open_spec.tests.schemas.schemas.gistObj1",
+                "flask_open_oas.tests.schemas.schemas.gistObj1",
             )
 
     def run_tests2(self, builder: OasBuilder):
@@ -49,7 +46,7 @@ class TestPathResponse(TestCase):
             )
             self.assertEqual(
                 val.get("x-schema", {}),
-                "flask_open_spec.tests.schemas.schemas.gistObj1",
+                "flask_open_oas.tests.schemas.schemas.gistObj1",
             )
 
     def test_data(self):

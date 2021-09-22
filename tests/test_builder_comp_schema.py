@@ -1,7 +1,7 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
 from .schemas.schemas import GistSchema, gistObj1, get_schema
-from ..open_spec.decorators import Deferred, component_schema
+from ..open_oas.decorators import Deferred, component_schema
 
 
 class TestSchemaDict(TestCase):
@@ -24,9 +24,7 @@ class TestSchemaKlass(TestCase):
     def setUp(self) -> None:
         self.schema_instance = GistSchema
         self.schema_name = "GistSchema"
-        self.schema_qualname = (
-            "flask_open_spec.tests.schemas.schemas.GistSchema"
-        )
+        self.schema_qualname = "flask_open_oas.tests.schemas.schemas.GistSchema"
 
         return super().setUp()
 
@@ -80,7 +78,7 @@ class TestSchemaObj(TestSchemaKlass):
     def setUp(self) -> None:
         self.schema_instance = gistObj1
         # self.schema_name = "GistSchema"
-        self.schema_qualname = "flask_open_spec.tests.schemas.schemas.gistObj1"
+        self.schema_qualname = "flask_open_oas.tests.schemas.schemas.gistObj1"
 
         return super().setUp()
 
@@ -112,9 +110,7 @@ class TestSchemaObj(TestSchemaKlass):
 
 class TestSchemaFactory(TestSchemaKlass):
     def setUp(self) -> None:
-        self.schema_qualname = (
-            "flask_open_spec.tests.schemas.schemas.get_schema"
-        )
+        self.schema_qualname = "flask_open_oas.tests.schemas.schemas.get_schema"
         self.schema_instance = get_schema
 
         return super().setUp()

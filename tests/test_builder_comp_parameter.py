@@ -1,16 +1,12 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    PaginationSchema
-)
-from ..open_spec.decorators import component_parameter, Deferred
+from ..tests.schemas.schemas import PaginationSchema
+from ..open_oas.decorators import component_parameter, Deferred
 
 
 class TestComponentParameter(TestCase):
     def run_tests(self, builder: OasBuilder):
-        klass_qualname = (
-            "flask_open_spec.tests.schemas.schemas.PaginationSchema"
-        )
+        klass_qualname = "flask_open_oas.tests.schemas.schemas.PaginationSchema"
         data = builder.get_data()
         schemas = data.get("components", {}).get("schemas", {})
         parameters = data.get("components", {}).get("parameters", {})

@@ -1,6 +1,6 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..open_spec.decorators import Deferred, path_details
+from ..open_oas.decorators import Deferred, path_details
 
 
 class TestPathDetails(TestCase):

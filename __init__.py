@@ -1,4 +1,4 @@
-from .open_spec import (
+from .open_oas import (
     OasConfig,  # noqa
     OpenSpec,  # noqa
     component_header,  # noqa

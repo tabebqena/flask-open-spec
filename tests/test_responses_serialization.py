@@ -10,7 +10,7 @@ import json
 from flask import Flask, g, redirect as flask_redirect
 import pytest
 
-from ..open_spec.open_spec import OpenSpec
+from ..open_oas.open_oas import OpenSpec
 
 
 @dataclass
@@ -183,8 +183,8 @@ oas_data = {
 
 
 class TestSerializer(TestCase):
-    def set_open_spec(self, oas_data):
-        self.open_spec = OpenSpec(
+    def set_open_oas(self, oas_data):
+        self.open_oas = OpenSpec(
             app=self.app,
             oas_data=oas_data,
             config_data={
@@ -256,7 +256,7 @@ class TestSerializer(TestCase):
 
     def tearDown(self) -> None:
         try:
-            file_path = self.open_spec.config.oas_dir_path
+            file_path = self.open_oas.config.oas_dir_path
             if os.path.exists(file_path):
                 shutil.rmtree(file_path)
         except:
@@ -265,14 +265,14 @@ class TestSerializer(TestCase):
         return super().tearDown()
 
     def test_users(self):
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/users")
             self.assertEqual(res.status_code, 200)
             self.assertEqual(res.get_json(), self.data)
 
     def test_verbose(self):
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post(
                 "/verbose",
@@ -281,7 +281,7 @@ class TestSerializer(TestCase):
             self.assertEqual(res.get_json(), self.data)
 
     def test_breif(self):
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post(
                 "/breif",
@@ -293,7 +293,7 @@ class TestSerializer(TestCase):
             )
 
     def test_range_status_code_response(self):
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/range")
             self.assertEqual(res.status_code, 200)
@@ -301,7 +301,7 @@ class TestSerializer(TestCase):
 
     def test_default_response(self):
 
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/default")
             self.assertEqual(res.status_code, 200)
@@ -309,7 +309,7 @@ class TestSerializer(TestCase):
 
     def test_reused_response(self):
 
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/users")
             self.assertEqual(res.status_code, 200)
@@ -317,35 +317,35 @@ class TestSerializer(TestCase):
 
     def test_no_response(self):
 
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/no_response")
             self.assertEqual(res.status_code, 200)
             self.assertEqual(res.get_json(), {"data": None})
 
     def test_no_response_error(self):
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.assertRaises(TypeError):
             client = self.app.test_client()
             client.post("/no_response_error")
 
     def test_no_content_response(self):
 
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/no_content")
             self.assertEqual(res.status_code, 200)
 
     def test_no_content_response_error(self):
 
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.assertRaises(TypeError):
             client = self.app.test_client()
             client.post("/no_content_error")
 
     def test_explicit_mimetype(self):
 
-        self.set_open_spec(oas_data)
+        self.set_open_oas(oas_data)
         with self.app.test_client() as client:
             res = client.post("/explicit_mimetype")
             self.assertEqual(res.status_code, 200)

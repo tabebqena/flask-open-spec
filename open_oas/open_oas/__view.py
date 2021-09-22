@@ -6,22 +6,22 @@ from flask import Blueprint, current_app, jsonify, render_template, url_for
 from ._utils import load_file, cache_file
 
 if TYPE_CHECKING:
-    from .open_spec import OpenSpec
+    from .open_oas import OpenSpec
 
 
 class __ViewManager:
     def __init__(
         self,
-        open_spec: "OpenSpec",
+        open_oas: "OpenSpec",
         blueprint_name="",
         url_prefix=None,
         auto_build=False,
         authorization_handler=None,
     ) -> None:
-        self.open_spec = open_spec
-        self.app = open_spec.app
+        self.open_oas = open_oas
+        self.app = open_oas.app
 
-        self.config = open_spec.config
+        self.config = open_oas.config
         self.__auto_build_flag = auto_build
         self.__authorization_handler = authorization_handler
         self.__blueprint_name = blueprint_name or self.config.blueprint_name
@@ -39,7 +39,7 @@ class __ViewManager:
                 self.config.cache_dir_path,
             )
 
-            self.open_spec.build()
+            self.open_oas.build()
             if cached_final and os.path.exists(cached_final):
                 os.remove(cached_final)
         except Exception as e:
@@ -94,7 +94,7 @@ class __ViewManager:
 
     def get_spec_dict(self):
         if not self.__built:
-            self.open_spec.build()
+            self.open_oas.build()
             self.__built = True
 
         return load_file(self.config.final_file_path)

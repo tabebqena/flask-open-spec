@@ -1,6 +1,6 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oasbuilder.builder import OasBuilder
 from unittest import TestCase
-from ..open_spec.decorators import (
+from ..open_oasdecorators import (
     Deferred,
     api_key_security_schema,
     api_basic_security_scheme,

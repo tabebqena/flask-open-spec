@@ -117,7 +117,7 @@ _config_map = {
 
 class OasConfig:
     """
-     Holds all config values used bu open_spec plugin
+     Holds all config values used bu open_oas plugin
 
      properties:
 
@@ -128,7 +128,7 @@ class OasConfig:
      cache_on_build: cache the old files of oas rather than overwriting them.
      save_sections_files: wheather to save the sections file or not, The sections file contain:
         ["openapi", "tags", "externalDocs", "servers", "info"]
-     auto_build: if true, open_spec.build() method will be invoked before the first request.
+     auto_build: if true, open_oas.build() method will be invoked before the first request.
      #
      register_blueprint: register blueprint contains 2 endpoint, one for oas json and the other
         for oas ui.

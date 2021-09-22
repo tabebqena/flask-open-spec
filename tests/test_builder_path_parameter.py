@@ -1,9 +1,7 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..tests.schemas.schemas import (
-    PaginationSchema
-)
-from ..open_spec.decorators import Deferred, path_parameter
+from ..tests.schemas.schemas import PaginationSchema
+from ..open_oas.decorators import Deferred, path_parameter
 
 
 class TestPathParameter(TestCase):

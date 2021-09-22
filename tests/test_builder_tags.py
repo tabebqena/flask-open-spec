@@ -1,5 +1,5 @@
-from ..open_spec.decorators import Deferred, api_tag
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oasdecorators import Deferred, api_tag
+from ..open_oasbuilder.builder import OasBuilder
 from unittest import TestCase
 
 

@@ -8,12 +8,12 @@ from ._utils import load_file, merge_recursive
 
 if TYPE_CHECKING:
     from .oas_config import OasConfig
-    from .open_spec import OpenSpec
+    from .open_oas import OpenSpec
 
 
-def __load_overrides(open_spec: "OpenSpec") -> dict:
+def __load_overrides(open_oas: "OpenSpec") -> dict:
     data = {}
-    dir = open_spec.config.overrides_dir_path
+    dir = open_oas.config.overrides_dir_path
     if not os.path.exists(dir):
         return data
     files = os.listdir(dir)
@@ -27,16 +27,16 @@ def __load_overrides(open_spec: "OpenSpec") -> dict:
 
 
 def __load_data(
-    open_spec: "OpenSpec",
+    open_oas: "OpenSpec",
     templates_data: Dict[str, Any],
     input_oas_data: dict = {},
 ):
-    config = open_spec.config
-    # editor = open_spec._editor
+    config = open_oas.config
+    # editor = open_oas._editor
 
     # sections_data = load_file(config.sections_file)
     # components_data = load_file(config.components_file)
-    overrides = __load_overrides(open_spec)
+    overrides = __load_overrides(open_oas)
     # snippet_files_data = editor.load_snippet_files()
     #
     data = cast(

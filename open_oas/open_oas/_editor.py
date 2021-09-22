@@ -33,7 +33,7 @@ from ._utils import (
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .open_spec import OpenSpec
+    from .open_oas import OpenSpec
 
 
 #
@@ -101,11 +101,11 @@ def make_template_data(config: "OasConfig", app_paths: Dict[str, List[str]]):
 #
 class TemplatesEditor:
     def __init__(
-        self, open_spec: "OpenSpec", template_data: Dict, echo=False
+        self, open_oas: "OpenSpec", template_data: Dict, echo=False
     ) -> None:
-        self.open_spec = open_spec
-        self.config = open_spec.config
-        self.app_paths = self.open_spec._app_paths
+        self.open_oas = open_oas
+        self.config = open_oas.config
+        self.app_paths = self.open_oas._app_paths
         self.template_data: dict = template_data
         self.__mk_dirs_files()
         self.__update_all()

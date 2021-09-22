@@ -18,7 +18,7 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
-    from ..open_spec import OpenSpec
+    from ..open_oas import OpenSpec
 
 from .._parameters import rule_to_path
 
@@ -27,17 +27,17 @@ from werkzeug.wrappers import Response as BaseResponse
 
 
 class __ResponseSerializer:
-    def __init__(self, open_spec: "OpenSpec") -> None:
-        self.open_spec = open_spec
-        self.app = open_spec.app
-        self.config = open_spec.config
+    def __init__(self, open_oas: "OpenSpec") -> None:
+        self.open_oas = open_oas
+        self.app = open_oas.app
+        self.config = open_oas.config
         if self.config.serialize_response:
             self.app.before_first_request(self.wrap_all_functions)
 
         else:
             return
         self.default_mime_type = self.config.default_response_mime_type
-        self.app = open_spec.app
+        self.app = open_oas.app
         self.row_oas = {}
         self.final_oas = {}
 

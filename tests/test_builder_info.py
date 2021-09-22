@@ -1,6 +1,6 @@
-from ..open_spec.builder.builder import OasBuilder
+from ..open_oas.builder.builder import OasBuilder
 from unittest import TestCase
-from ..open_spec.decorators import api_info, Deferred
+from ..open_oas.decorators import api_info, Deferred
 
 
 class TestInfo(TestCase):

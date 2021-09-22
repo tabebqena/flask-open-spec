@@ -1,6 +1,6 @@
 import setuptools
 
-version = "0.1.0-dev"
+version = "0.2.0-dev"
 
 requirements = [
     "apispec>=4.7.1",
@@ -15,11 +15,11 @@ requirements = [
 
 
 setuptools.setup(
-    name="open_spec",
+    name="open_oas",
     version=version,
     author="Ahmad Yahia",
     python_requires=">=3.8.5",
     install_requires=requirements,
-    packages=["open_spec"],
-    package_dir={"open_spec": "open_spec"},
+    packages=["open_oas"],
+    package_dir={"open_oas": "open_oas"},
 )
