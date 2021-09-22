@@ -47,7 +47,7 @@ def make_template_data(config: "OasConfig", app_paths: Dict[str, List[str]]):
         "info": INFO_STUB,
         "servers": SERVERS_STUB,
         "tags": TAGS_STUB,
-        "components": {"securitySchemes": SECURITY_SCHEMAS_STUB},
+        "components": {"securitySchemes": SECURITY_SCHEMAS_STUB, "schemas": {}},
         "externalDocs": EXTERNALDOCS_STUB,
     }
     #
@@ -242,8 +242,8 @@ class TemplatesEditor:
     def __locate_oas_file(self, rule: Rule) -> str:
         path = rule_to_path(rule)
         file_path = None
-        if self.config.spec_files_locator:
-            file_path = self.config.spec_files_locator(rule=rule, path=path)
+        if self.config.oas_files_locator:
+            file_path = self.config.oas_files_locator(rule=rule, path=path)
 
         if not file_path:
             path_ = path.replace("/", ".") + ".yaml"

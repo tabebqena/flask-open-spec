@@ -85,11 +85,9 @@ class __RequestsValidator:
         return xschema, is_required
 
     def __validate_request_body(self):
-        if self.config.pre_validattion_handler:
-            try:
-                self.config.pre_validattion_handler()
-            except:
-                return
+        if self.config.pre_validation_handler:
+            self.config.pre_validation_handler()
+
         try:
             validation_errors = {}
             xschema, is_required = self.__get_request_body_xschema(
@@ -127,8 +125,8 @@ class __RequestsValidator:
         except Exception as e:
             print(e)
             warning(e)
-        if self.config.post_validattion_handler:
-            self.config.post_validattion_handler()
+        if self.config.post_validation_handler:
+            self.config.post_validation_handler()
 
     def __post_validation(
         self,
